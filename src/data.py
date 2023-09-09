@@ -158,7 +158,7 @@ class RLData(Dataset):
 
     @property
     def action_dim(self):
-        return 0
+        return 1
 
     @property
     def n_tokens(self):
@@ -167,7 +167,7 @@ class RLData(Dataset):
     @property
     def observation_dim(self):
         _, _, observation_dim = self.observations.shape
-        return 0
+        return observation_dim
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
