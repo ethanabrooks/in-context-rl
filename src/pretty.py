@@ -32,7 +32,7 @@ def print_row(
         return int(np.round(widths[col] * term_size.columns))
 
     if show_header:
-        header = [f"{k:<{col_width(k)}}" for k in row]
+        header = [f"{k[:col_width(k) - 2]:<{col_width(k)}}" for k in row]
         console.print("".join(header), style="underline")
     row_str = ""
     for column, value in row.items():

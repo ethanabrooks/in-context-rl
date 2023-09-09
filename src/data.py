@@ -6,31 +6,6 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
-def visualize_values(
-    grid_size: int, n_rounds: int, V: torch.Tensor, policy_idx: int = 0
-):
-    global_min = V[:, policy_idx].min().item()
-    global_max = V[:, policy_idx].max().item()
-    fig, axs = plt.subplots(n_rounds, 1, figsize=(5, 5 * n_rounds))
-
-    for k in range(n_rounds):
-        values = V[k, policy_idx, :-1].reshape((grid_size, grid_size))
-        im = axs[k].imshow(
-            values,
-            cmap="hot",
-            interpolation="nearest",
-            vmin=global_min,
-            vmax=global_max,
-        )
-        axs[k].set_title(f"Value function at iteration {k}")
-
-        # Add colorbar to each subplot
-        fig.colorbar(im, ax=axs[k], fraction=0.046, pad=0.04)
-
-    plt.tight_layout()
-    plt.savefig(f"value_iteration{policy_idx}.png")
-
-
 def compute_policy_towards_goal(states, goals, grid_size):
     # Expand goals and states for broadcasting
     expanded_goals = goals[:, None, :]
@@ -62,19 +37,14 @@ def compute_policy_towards_goal(states, goals, grid_size):
     return actions / actions.sum(-1, keepdim=True)
 
 
-def value_iteration(grid_size: int, n_policies: int, n_rounds: int, n_steps: int):
+def get_trajectories(grid_size: int, n_data: int, trajectory_length: int):
     deltas = torch.tensor([[-1, 0], [1, 0], [0, -1], [0, 1]])
-    B = n_steps
+    B = n_data
     N = grid_size**2 + 1
     A = len(deltas)
-    goals = torch.randint(0, grid_size, (n_steps, 2))
+    goals = torch.randint(0, grid_size, (n_data, 2))
     states = torch.tensor([[i, j] for i in range(grid_size) for j in range(grid_size)])
-    alpha = torch.ones(4)
-    Pi = (
-        torch.distributions.Dirichlet(alpha)
-        .sample((n_policies, N))
-        .tile(math.ceil(B / n_policies), 1, 1)[:B]
-    )
+    Pi = compute_policy_towards_goal(states, goals, grid_size)
     assert [*Pi.shape] == [B, N, A]
 
     # Compute next states for each action and state for each batch (goal)
@@ -97,23 +67,41 @@ def value_iteration(grid_size: int, n_policies: int, n_rounds: int, n_steps: int
     R = is_goal.float()[..., None].tile(1, 1, A)
     R = F.pad(R, padding, value=0)  # Insert row for absorbing state
 
-    # Compute the policy conditioned transition function
-    Pi_ = Pi.view(B * N, 1, A)
-    T_ = T.view(B * N, A, N)
-    T_Pi = torch.bmm(Pi_, T_)
-    T_Pi = T_Pi.view(B, N, N)
+    states = torch.zeros((B, trajectory_length, 2), dtype=torch.int)
+    actions = torch.zeros((B, trajectory_length), dtype=torch.int)
+    rewards = torch.zeros((B, trajectory_length))
+    current_states = torch.randint(0, grid_size, (n_data, 2))
 
-    gamma = 0.99  # Assuming a discount factor
+    for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
+        # Convert current current_states to indices
+        current_state_indices = current_states[:, 0] * grid_size + current_states[:, 1]
 
-    # Initialize V_0
-    V = torch.zeros((n_rounds, n_steps, N), dtype=torch.float32)
-    for k in tqdm(range(n_rounds - 1)):
-        ER = (Pi * R).sum(-1)
-        EV = (T_Pi * V[k, :, None]).sum(-1)
-        V[k + 1] = ER + gamma * EV
+        # Sample actions from the policy
+        A = (
+            torch.multinomial(Pi[torch.arange(B), current_state_indices], 1)
+            .squeeze(1)
+            .long()
+        )
 
-    # visualize_values(grid_size, n_rounds, V, policy_idx=0)
-    return Pi, R, V
+        # Store the current current_states and rewards
+        states[:, t] = current_states
+        actions[:, t] = A
+        rewards[:, t] = R[torch.arange(B), current_state_indices, A]
+
+        # Compute next state indices
+        next_state_indices = torch.argmax(
+            T[torch.arange(B), current_state_indices, A], dim=1
+        )
+
+        # Convert next state indices to coordinates
+        next_states = torch.stack(
+            (next_state_indices // grid_size, next_state_indices % grid_size), dim=1
+        )
+
+        # Update current current_states
+        current_states = next_states
+
+    return states, actions, rewards
 
 
 def round_to(tensor, decimals=2):
@@ -145,97 +133,54 @@ class RLData(Dataset):
     def __init__(
         self,
         grid_size: int,
-        include_v1: bool,
-        min_order: int,
-        max_order: int,
-        n_bins: int,
-        n_policies: int,
-        n_steps: int,
-        seq_len: int,
+        n_data: int,
     ):
-        n_rounds = 2 * grid_size
-        Pi, R, V = value_iteration(
+        self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
-            n_policies=n_policies,
-            n_rounds=n_rounds,
-            n_steps=n_steps,
+            n_data=n_data,
+            trajectory_length=2 * grid_size,
         )
-        mapping = torch.tensor([[-1, 0], [1, 0], [0, -1], [0, 1]])
-        A = len(mapping)
-        all_states = torch.tensor(
-            [[i, j] for i in range(grid_size) for j in range(grid_size)]
-        )
-        seq_len = A * len(all_states)
-
-        def get_indices(states: torch.Tensor):
-            # Step 1: Flatten states
-            states_flattened = states.view(-1, 2)
-
-            # Step 2: Convert states to indices
-            indices = states_flattened[:, 0] * grid_size + states_flattened[:, 1]
-
-            # Step 3: Reshape indices
-            indices_reshaped = indices.view(n_steps, seq_len)
-
-            # Step 4: Use advanced indexing
-            return torch.arange(n_steps)[:, None], indices_reshaped
-
-        states = all_states[None].tile(n_steps, A, 1, 1).reshape(n_steps, -1, 2)
-
-        # Convert 2D states to 1D indices
-        S = states[..., 0] * grid_size + states[..., 1]
-
-        # Gather the corresponding probabilities from Pi
-        probabilities = Pi.gather(1, S[..., None]).expand(-1, -1, A)
-        print("Sampling actions...", end="", flush=True)
-        actions = (
-            torch.arange(A)[:, None]
-            .expand(-1, len(all_states))
-            .reshape(-1)
-            .expand(n_steps, -1)
-        )
-        print("✓")
-
-        deltas = mapping[actions]
-        next_states = torch.clamp(states + deltas, 0, grid_size - 1)
-        idxs1, idxs2 = get_indices(states)
-        rewards = R[idxs1, idxs2].gather(dim=2, index=actions[..., None])
-
-        if max_order is None:
-            max_order = len(V) - 2
-        if min_order is None:
-            min_order = 0
-        order = torch.randint(min_order, max_order + 1, (n_steps, seq_len))
-        idxs1, idxs2 = get_indices(next_states)
-
-        V1 = V[order, idxs1, idxs2]
-        V2 = V[order + 1, idxs1, idxs2]
-        print("Computing unique values...", end="", flush=True)
-        V1 = quantize_tensor(V1, n_bins)
-        print("✓", end="", flush=True)
-        V2 = quantize_tensor(V2, n_bins)
-        probabilities = quantize_tensor(probabilities, n_bins)
-        print("✓")
-        self.X = (
+        self.data = (
             torch.cat(
-                [
-                    states,
-                    probabilities,
-                    actions[..., None],
-                    rewards,
-                    order[..., None],
-                    *([V1[..., None]] if include_v1 else []),
-                ],
-                -1,
+                [self.observations, self.actions[..., None], self.rewards[..., None]],
+                dim=-1,
             )
             .long()
-            .cuda()
-        )
+            .reshape(n_data, -1)
+            .contiguous()
+        ).cuda()
+        self.mask = torch.ones_like(self.data).cuda()
 
-        self.Z = V2.cuda()
+    @property
+    def action_dim(self):
+        return 1
 
-    def __len__(self):
-        return len(self.X)
+    @property
+    def n_tokens(self):
+        return 1 + self.data.max().round().long().item()
+
+    @property
+    def observation_dim(self):
+        _, _, observation_dim = self.observations.shape
+        return observation_dim
 
     def __getitem__(self, idx):
-        return self.X[idx], self.Z[idx]
+        return self.data[idx], self.mask[idx]
+
+    def __len__(self):
+        return len(self.data)
+
+
+def get_step_dim(observation_dim, action_dim):
+    return observation_dim + action_dim + 1
+
+
+def split_sequence(sequence, observation_dim, action_dim):
+    transition_dim = get_step_dim(observation_dim, action_dim)
+    n_batch, _ = sequence.shape
+    sequence = sequence.reshape(n_batch, -1, transition_dim)
+
+    observations = sequence[:, :, :observation_dim]
+    actions = sequence[:, :, observation_dim : observation_dim + action_dim]
+    rewards = sequence[:, :, -1]
+    return dict(observations=observations, actions=actions, rewards=rewards)
