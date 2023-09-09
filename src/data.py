@@ -140,26 +140,20 @@ class RLData(Dataset):
             n_data=n_data,
             trajectory_length=1,
         )
-        # self.data = (
-        #     torch.cat(
-        #         [self.observations, self.actions[..., None], self.rewards[..., None]],
-        #         dim=-1,
-        #     )
-        #     .long()
-        #     .reshape(n_data, -1)
-        #     .contiguous()
-        # ).cuda()
-        n = 5
-        base = torch.arange(n)
-        base = torch.cat((base, base))  # Duplicate base to handle wrap-around
-        offsets = torch.randint(0, n, (n_data,))  # Random offsets for each row
-        rows = [base[offset : offset + n] for offset in offsets]
-        self.data = torch.stack(rows).cuda()
+        self.data = (
+            torch.cat(
+                [self.observations, self.actions[..., None], self.rewards[..., None]],
+                dim=-1,
+            )
+            .long()
+            .reshape(n_data, -1)
+            .contiguous()
+        ).cuda()
         self.mask = torch.ones_like(self.data).cuda()
 
     @property
     def action_dim(self):
-        return 0
+        return 1
 
     @property
     def n_tokens(self):
@@ -168,7 +162,7 @@ class RLData(Dataset):
     @property
     def observation_dim(self):
         _, _, observation_dim = self.observations.shape
-        return 0
+        return observation_dim
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
