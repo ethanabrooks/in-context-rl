@@ -9,7 +9,14 @@ def get_metrics(sequence, logits, observation_dim, action_dim):
     assert n_batch == n_batch2
     assert seq_len == seq_len2 + 1
     accuracy = (logits.argmax(-1) == sequence[:, 1:]).float().mean()
-    return dict(accuracy=accuracy.item())
+    acc_by_idx = {
+        f"accuracy {i}": (logits[:, i].argmax(-1) == sequence[:, i + 1])
+        .float()
+        .mean()
+        .item()
+        for i in range(seq_len - 1)
+    }
+    return dict(accuracy=accuracy.item(), **acc_by_idx)
 
     # prefix = sequence[:, :1]
     # preds = torch.cat([prefix, logits.argmax(-1)], dim=1)
