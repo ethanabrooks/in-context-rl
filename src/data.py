@@ -42,7 +42,7 @@ def compute_policy_towards_goal(states, goals, grid_size):
     return actions
 
 
-def get_trajectories(grid_size: int, n_data: int, trajectory_length: int):
+def get_trajectories(grid_size: int, n_data: int, episode_length: int, n_episodes: int):
     deltas = torch.tensor([[-1, 0], [1, 0], [0, -1], [0, 1]])
     B = n_data
     N = grid_size**2 + 1
@@ -72,12 +72,15 @@ def get_trajectories(grid_size: int, n_data: int, trajectory_length: int):
     R = is_goal.float()[..., None].tile(1, 1, A)
     R = F.pad(R, padding, value=0)  # Insert row for absorbing state
 
+    trajectory_length = episode_length * n_episodes
     states = torch.zeros((B, trajectory_length, 2), dtype=torch.int)
     actions = torch.zeros((B, trajectory_length), dtype=torch.int)
     rewards = torch.zeros((B, trajectory_length))
     current_states = torch.randint(0, grid_size, (n_data, 2))
 
     for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
+        if t % episode_length == 0:
+            current_states = torch.randint(0, grid_size, (n_data, 2))
         # Convert current current_states to indices
         current_state_indices = current_states[:, 0] * grid_size + current_states[:, 1]
 
@@ -140,10 +143,12 @@ class RLData(Dataset):
         grid_size: int,
         n_data: int,
     ):
+        episode_length = 1 + grid_size * 2
         self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
             n_data=n_data,
-            trajectory_length=1 + grid_size * 2,
+            episode_length=episode_length,
+            n_episodes=2,
         )
         self.data = (
             torch.cat(
