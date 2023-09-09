@@ -36,4 +36,5 @@ def get_final(x, n):
     if x.ndim == 2:
         x = x[..., None]
     x = x.reshape(n, -1, x.size(-1))
-    return x[:, -1]
+    _, n, *_ = x.shape
+    return x[:, -n:]
