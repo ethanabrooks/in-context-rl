@@ -26,15 +26,20 @@ def compute_policy_towards_goal(states, goals, grid_size):
     absorbing_state_idx = n_states - 1
     actions = torch.zeros(goals.size(0), n_states, 4)
 
+    # Assign deterministic actions with vertical priority
     actions[positive_x_i, positive_x_j, 1] = 1  # Move down
     actions[negative_x_i, negative_x_j, 0] = 1  # Move up
-    actions[positive_y_i, positive_y_j, 3] = 1  # Move right
-    actions[negative_y_i, negative_y_j, 2] = 1  # Move left
-    actions[equal_i, equal_j, :] = 1  # Random Movement
-    actions[:, absorbing_state_idx, :] = 1  # Random Movement
+    # Only assign horizontal actions if no vertical action has been assigned
+    actions[positive_y_i, positive_y_j, 3] = (
+        actions[positive_y_i, positive_y_j].sum(-1) == 0
+    ).float()  # Move right
+    actions[negative_y_i, negative_y_j, 2] = (
+        actions[negative_y_i, negative_y_j].sum(-1) == 0
+    ).float()  # Move left
+    actions[:, absorbing_state_idx, 0] = 1  # Arbitrary action, since it doesn't matter
+    actions[equal_i, equal_j, 0] = 1  # Arbitrary action, since it doesn't matter
 
-    # Normalize using softmax along the action dimension
-    return actions / actions.sum(-1, keepdim=True)
+    return actions
 
 
 def get_trajectories(grid_size: int, n_data: int, trajectory_length: int):
