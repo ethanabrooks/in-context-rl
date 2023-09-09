@@ -8,7 +8,7 @@ def get_metrics(sequence, logits, observation_dim, action_dim):
     n_batch2, seq_len2, _ = logits.shape
     assert n_batch == n_batch2
     assert seq_len == seq_len2 + 1
-    accuracy = (logits.argmax(-1) == sequence[:, :-1].cumsum(-1)).float().mean()
+    accuracy = (logits.argmax(-1) == sequence[:, 1:]).float().mean()
     return dict(accuracy=accuracy.item())
 
     # prefix = sequence[:, :1]

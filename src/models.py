@@ -200,6 +200,8 @@ class GPT(nn.Module):
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
 
+        self.proj = nn.Linear(n_embd, n_tokens + 1)
+
     def get_block_size(self):
         return self.block_size
 
@@ -318,7 +320,7 @@ class GPT(nn.Module):
         ## [ B x T x embedding_dim ]
         # forward the GPT model
         token_embeddings = self.tok_emb(
-            offset_idx
+            inputs
         )  # each index maps to a (learnable) vector
         ## [ 1 x T x embedding_dim ]
         position_embeddings = self.pos_emb[
@@ -327,49 +329,58 @@ class GPT(nn.Module):
         ## [ B x T x embedding_dim ]
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
-        ## [ B x T x embedding_dim ]
-        x = self.ln_f(x)
 
-        ## [ (B * T' / transition_dim) x transition_dim x embedding_dim ]
-        x_pad, n_pad = self.pad_to_full_observation(x)
-        ## [ (B * T' / transition_dim) x transition_dim x (vocab_size + 1) ]
-        logits = self.head(x_pad)
-        ## [ B x T' x (vocab_size + 1) ]
-        logits = logits.reshape(b, t + n_pad, self.vocab_size + 1)
-        ## [ B x T x (vocab_size + 1) ]
-        logits = logits[:, :t]
+        ## NEW
+        logits = self.proj(x)
+        loss = F.cross_entropy(
+            logits.swapaxes(1, 2),
+            targets,
+            reduction="mean",
+        )
+        ## END NEW
+        # ## [ B x T x embedding_dim ]
+        # x = self.ln_f(x)
 
-        # if we are given some desired targets also calculate the loss
-        if targets is not None:
-            loss = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)),
-                targets.view(-1),
-                reduction="none",
-            )
-            if (
-                self.action_weight != 1
-                or self.reward_weight != 1
-                or self.value_weight != 1
-            ):
-                #### make weights
-                n_states = int(np.ceil(t / self.transition_dim))
-                weights = torch.cat(
-                    [
-                        torch.ones(self.observation_dim, device=inputs.device),
-                        torch.ones(self.action_dim, device=inputs.device)
-                        * self.action_weight,
-                        torch.ones(1, device=inputs.device) * self.reward_weight,
-                        # torch.ones(1, device=inputs.device) * self.value_weight,
-                    ]
-                )
-                ## [ t + 1]
-                weights = weights.repeat(n_states)
-                ## [ b x t ]
-                weights = weights[1:].repeat(b, 1)
-                ####
-                loss = loss * weights.view(-1)
-            loss = (loss * mask.view(-1)).mean()
-        else:
-            loss = None
+        # ## [ (B * T' / transition_dim) x transition_dim x embedding_dim ]
+        # x_pad, n_pad = self.pad_to_full_observation(x)
+        # ## [ (B * T' / transition_dim) x transition_dim x (vocab_size + 1) ]
+        # logits = self.head(x_pad)
+        # ## [ B x T' x (vocab_size + 1) ]
+        # logits = logits.reshape(b, t + n_pad, self.vocab_size + 1)
+        # ## [ B x T x (vocab_size + 1) ]
+        # logits = logits[:, :t]
+
+        # # if we are given some desired targets also calculate the loss
+        # if targets is not None:
+        #     loss = F.cross_entropy(
+        #         logits.reshape(-1, logits.size(-1)),
+        #         targets.view(-1),
+        #         reduction="none",
+        #     )
+        #     if (
+        #         self.action_weight != 1
+        #         or self.reward_weight != 1
+        #         or self.value_weight != 1
+        #     ):
+        #         #### make weights
+        #         n_states = int(np.ceil(t / self.transition_dim))
+        #         weights = torch.cat(
+        #             [
+        #                 torch.ones(self.observation_dim, device=inputs.device),
+        #                 torch.ones(self.action_dim, device=inputs.device)
+        #                 * self.action_weight,
+        #                 torch.ones(1, device=inputs.device) * self.reward_weight,
+        #                 # torch.ones(1, device=inputs.device) * self.value_weight,
+        #             ]
+        #         )
+        #         ## [ t + 1]
+        #         weights = weights.repeat(n_states)
+        #         ## [ b x t ]
+        #         weights = weights[1:].repeat(b, 1)
+        #         ####
+        #         loss = loss * weights.view(-1)
+        #     loss = (loss * mask.view(-1)).mean()
+        # else:
+        #     loss = None
 
         return logits, loss
