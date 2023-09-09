@@ -138,7 +138,7 @@ class RLData(Dataset):
         self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
             n_data=n_data,
-            trajectory_length=grid_size,
+            trajectory_length=1,
         )
         self.data = (
             torch.cat(
