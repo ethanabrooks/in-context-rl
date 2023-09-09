@@ -346,28 +346,28 @@ class GPT(nn.Module):
                 targets.view(-1),
                 reduction="none",
             )
-            # if (
-            #     self.action_weight != 1
-            #     or self.reward_weight != 1
-            #     or self.value_weight != 1
-            # ):
-            #     #### make weights
-            #     n_states = int(np.ceil(t / self.transition_dim))
-            #     weights = torch.cat(
-            #         [
-            #             torch.ones(self.observation_dim, device=inputs.device),
-            #             torch.ones(self.action_dim, device=inputs.device)
-            #             * self.action_weight,
-            #             torch.ones(1, device=inputs.device) * self.reward_weight,
-            #             # torch.ones(1, device=inputs.device) * self.value_weight,
-            #         ]
-            #     )
-            #     ## [ t + 1]
-            #     weights = weights.repeat(n_states)
-            #     ## [ b x t ]
-            #     weights = weights[1:].repeat(b, 1)
-            #     ####
-            #     loss = loss * weights.view(-1)
+            if (
+                self.action_weight != 1
+                or self.reward_weight != 1
+                or self.value_weight != 1
+            ):
+                #### make weights
+                n_states = int(np.ceil(t / self.transition_dim))
+                weights = torch.cat(
+                    [
+                        torch.ones(self.observation_dim, device=inputs.device),
+                        torch.ones(self.action_dim, device=inputs.device)
+                        * self.action_weight,
+                        torch.ones(1, device=inputs.device) * self.reward_weight,
+                        # torch.ones(1, device=inputs.device) * self.value_weight,
+                    ]
+                )
+                ## [ t + 1]
+                weights = weights.repeat(n_states)
+                ## [ b x t ]
+                weights = weights[1:].repeat(b, 1)
+                ####
+                loss = loss * weights.view(-1)
             loss = (loss * mask.view(-1)).mean()
         else:
             loss = None
