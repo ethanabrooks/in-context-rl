@@ -148,7 +148,7 @@ class RLData(Dataset):
             grid_size=grid_size,
             n_data=n_data,
             episode_length=episode_length,
-            n_episodes=2,
+            n_episodes=4,
         )
         self.data = (
             torch.cat(
