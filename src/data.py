@@ -143,7 +143,7 @@ class RLData(Dataset):
         self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
             n_data=n_data,
-            trajectory_length=1,
+            trajectory_length=3,
         )
         o1, o2 = torch.split(self.observations, 1, -1)
         self.observations = grid_size * o1 + o2
