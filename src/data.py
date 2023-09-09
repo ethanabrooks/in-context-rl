@@ -145,6 +145,8 @@ class RLData(Dataset):
             n_data=n_data,
             trajectory_length=1,
         )
+        o1, o2 = torch.split(self.observations, 1, -1)
+        self.observations = grid_size * o1 + o2
         self.data = (
             torch.cat(
                 [self.observations, self.actions[..., None], self.rewards[..., None]],
@@ -166,8 +168,8 @@ class RLData(Dataset):
 
     @property
     def observation_dim(self):
-        _, _, observation_dim = self.observations.shape
-        return observation_dim
+        # _, _, observation_dim = self.observations.shape
+        return 1
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
