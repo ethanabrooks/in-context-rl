@@ -47,7 +47,7 @@ def get_trajectories(grid_size: int, n_data: int, trajectory_length: int):
     B = n_data
     N = grid_size**2 + 1
     A = len(deltas)
-    goals = torch.randint(0, grid_size, (n_data, 2))
+    goals = torch.randint(0, grid_size, (1, 2)).tile(B, 1)
     states = torch.tensor([[i, j] for i in range(grid_size) for j in range(grid_size)])
     Pi = compute_policy_towards_goal(states, goals, grid_size)
     assert [*Pi.shape] == [B, N, A]
