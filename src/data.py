@@ -157,7 +157,7 @@ class RLData(Dataset):
 
     @property
     def n_tokens(self):
-        return 1 + self.data.cumsum(-1).max().item()
+        return 1 + self.data.max().round().long().item()
 
     @property
     def observation_dim(self):
