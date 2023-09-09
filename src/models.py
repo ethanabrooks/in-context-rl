@@ -308,7 +308,7 @@ class GPT(nn.Module):
         sequence : [ B x S ]
         """
         inputs = sequence[:, :-1].contiguous()
-        targets = sequence[:, 1:].contiguous()
+        targets = inputs.cumsum(-1).contiguous()
         mask = mask[:, :-1].contiguous()
 
         b, t = inputs.size()

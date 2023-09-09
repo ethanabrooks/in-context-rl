@@ -138,7 +138,7 @@ class RLData(Dataset):
         self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
             n_data=n_data,
-            trajectory_length=2 * grid_size,
+            trajectory_length=grid_size,
         )
         self.data = (
             torch.cat(
@@ -157,7 +157,7 @@ class RLData(Dataset):
 
     @property
     def n_tokens(self):
-        return 1 + self.data.max().round().long().item()
+        return 1 + self.data.cumsum(-1).max().item()
 
     @property
     def observation_dim(self):
