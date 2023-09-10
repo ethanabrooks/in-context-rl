@@ -1,6 +1,6 @@
 config = dict(
     data_args=dict(
-        grid_size=5,
+        grid_size=3,
     ),
     n_batch=50,
     n_epochs=20,
