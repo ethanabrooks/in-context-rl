@@ -6,6 +6,9 @@ config = dict(
     n_epochs=20,
     log_freq=20,
     lr=0.001,
+    metrics_args=dict(
+        graphs_per_component=7,
+    ),
     model_args=dict(
         action_weight=5,
         layer_args=dict(

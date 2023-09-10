@@ -33,6 +33,7 @@ def train(
     data_args: dict,
     log_freq: int,
     lr: float,
+    metrics_args: dict,
     model_args: dict,
     n_batch: int,
     n_epochs: int,
@@ -67,6 +68,7 @@ def train(
     observation_dim = dataset.observation_dim
     action_dim = dataset.action_dim
     dims = dict(action_dim=action_dim, observation_dim=observation_dim)
+    metrics_args.update(dims)
 
     print("Create net... ", end="", flush=True)
     net = GPT(n_tokens=dataset.n_tokens, **dims, **model_args).cuda()
@@ -86,7 +88,7 @@ def train(
         for t, (sequence, mask) in enumerate(train_loader):
             step = e * len(train_loader) + t
             if t % test_freq == 0:
-                log = evaluate(net=net, test_loader=test_loader, **dims)
+                log = evaluate(net=net, test_loader=test_loader, **metrics_args)
                 print_row(log, show_header=True)
                 if run is not None:
                     wandb.log({f"test/{k}": v for k, v in log.items()}, step=step)
@@ -96,7 +98,7 @@ def train(
             net.train()
             optimizer.zero_grad()
             logits, loss = net(sequence, mask)
-            log = get_metrics(sequence=sequence, logits=logits, **dims)
+            log = get_metrics(sequence=sequence, logits=logits, **metrics_args)
             counter.update(dict(**log, loss=loss.item()))
 
             loss.backward()
