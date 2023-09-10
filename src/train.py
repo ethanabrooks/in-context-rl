@@ -30,6 +30,7 @@ def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
 
 def train(
     data_args: dict,
+    grad_norm_clip: float,
     log_freq: int,
     metrics_args: dict,
     model_args: dict,
@@ -100,6 +101,7 @@ def train(
             counter.update(dict(**log, loss=loss.item()))
 
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), grad_norm_clip)
             optimizer.step()
 
             if t % log_freq == 0:

@@ -2,6 +2,7 @@ config = dict(
     data_args=dict(
         grid_size=3,
     ),
+    grad_norm_clip=1.0,
     n_batch=50,
     n_epochs=20,
     log_freq=20,
