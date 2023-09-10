@@ -22,7 +22,7 @@ class RLData(Dataset):
             episode_length=episode_length,
             n_episodes=1,
         )
-        self.data = self.cat_data(
+        self.data = self.cat_sequence(
             self.goals, self.observations, self.actions, self.rewards
         )
         sequence = self.split_sequence(self.data)
@@ -47,7 +47,7 @@ class RLData(Dataset):
     def step_dim(self):
         return sum(self._dims)
 
-    def cat_data(self, goals, observations, actions, rewards):
+    def cat_sequence(self, goals, observations, actions, rewards):
         data = torch.cat(
             [goals, observations, actions[..., None], rewards[..., None]],
             dim=-1,
@@ -72,7 +72,7 @@ class RLData(Dataset):
         for k, v in kwargs.items():
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
-        return self.cat_data(**sequence).cuda()
+        return self.cat_sequence(**sequence).cuda()
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
