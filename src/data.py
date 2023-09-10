@@ -36,13 +36,13 @@ class RLData(Dataset):
         return 1 + self.data.max().round().long().item()
 
     @property
-    def _observation_dim(self):
-        _, _, observation_dim = self.observations.shape
-        return observation_dim
+    def _dims(self):
+        _, _, obs_dim = self.observations.shape
+        return [obs_dim, 1, 1]
 
     @property
     def step_dim(self):
-        return self._observation_dim + 1 + 1
+        return sum(self._dims)
 
     def cat_data(self, observations, actions, rewards):
         data = torch.cat(
@@ -55,10 +55,9 @@ class RLData(Dataset):
     def split_sequence(self, sequence: torch.Tensor):
         n_batch, _ = sequence.shape
         sequence = sequence.reshape(n_batch, -1, self.step_dim)
-
-        observations = sequence[:, :, : self._observation_dim]
-        actions = sequence[:, :, self._observation_dim]
-        rewards = sequence[:, :, -1]
+        observations, actions, rewards = sequence.split(self._dims, dim=-1)
+        actions = actions.squeeze(-1)
+        rewards = rewards.squeeze(-1)
         return dict(observations=observations, actions=actions, rewards=rewards)
 
     @lru_cache
