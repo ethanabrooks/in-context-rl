@@ -1,6 +1,7 @@
 import os
 import random
 from collections import Counter
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -9,8 +10,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 from wandb.sdk.wandb_run import Run
 
+import data
 import wandb
-from data import RLData, unwrap
+from data.base import unwrap
 from models import GPT
 from pretty import print_row
 from utils import decay_lr
@@ -31,6 +33,7 @@ def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
 
 def train(
     data_args: dict,
+    data_path: Path,
     grad_norm_clip: float,
     log_freq: int,
     lr: float,
@@ -67,7 +70,7 @@ def train(
     # Set the seed for Python's random module
     random.seed(seed)
 
-    dataset = RLData(**data_args, n_data=n_steps)
+    dataset = data.make(data_path, **data_args, n_data=n_steps)
 
     print("Create net... ", end="", flush=True)
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()

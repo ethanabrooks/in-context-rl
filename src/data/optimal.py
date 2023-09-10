@@ -1,12 +1,10 @@
-from functools import lru_cache
-
 import torch
-from torch.utils.data import Dataset
 
+import data.base
 from utils import get_trajectories
 
 
-class RLData(Dataset):
+class Data(data.base.Data):
     def __init__(
         self,
         grid_size: int,
@@ -31,18 +29,10 @@ class RLData(Dataset):
         self.mask = torch.ones_like(self.data).cuda()
 
     @property
-    def n_tokens(self):
-        return 1 + self.data.max().round().long().item()
-
-    @property
     def _dims(self):
         _, _, goal_dim = self.goals.shape
         _, _, obs_dim = self.observations.shape
         return [goal_dim, obs_dim, 1, 1]
-
-    @property
-    def step_dim(self):
-        return sum(self._dims)
 
     def cat_sequence(self, goals, observations, actions, rewards):
         data = torch.cat(
@@ -61,21 +51,6 @@ class RLData(Dataset):
         return dict(
             goals=goals, observations=observations, actions=actions, rewards=rewards
         )
-
-    @lru_cache
-    def weights(self, shape, **kwargs):
-        weights = torch.ones(shape)
-        sequence = self.split_sequence(weights)
-        for k, v in kwargs.items():
-            assert k in sequence, f"Invalid key {k}"
-            sequence[k] *= v
-        return self.cat_sequence(**sequence).cuda()
-
-    def __getitem__(self, idx):
-        return self.data[idx], self.mask[idx]
-
-    def __len__(self):
-        return len(self.data)
 
     def get_metrics(
         self,
@@ -126,9 +101,3 @@ class RLData(Dataset):
 
         logs = dict(**acc, **chunk_acc)
         return {k: v.float().mean().item() for k, v in logs.items()}
-
-
-def unwrap(dataset: Dataset):
-    if isinstance(dataset, RLData):
-        return dataset
-    return unwrap(dataset.dataset)
