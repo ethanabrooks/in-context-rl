@@ -151,7 +151,13 @@ class RLData(Dataset):
             episode_length=episode_length,
             n_episodes=1,
         )
-        self.data = self.cat_data(self.observations, self.actions, self.rewards).cuda()
+        self.data = self.cat_data(self.observations, self.actions, self.rewards)
+        sequence = self.split_sequence(self.data)
+        for name, component in dict(
+            observations=self.observations, actions=self.actions, rewards=self.rewards
+        ).items():
+            assert (sequence[name] == component).all()
+        self.data = self.data.cuda()
         self.mask = torch.ones_like(self.data).cuda()
 
     @property
