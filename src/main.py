@@ -39,7 +39,7 @@ def log(
 
 
 @tree.command()
-def no_log():
+def no_log():  # dead: disable
     return train(**config, run=None)
 
 
@@ -52,7 +52,7 @@ def get_git_rev():
 
 
 @tree.subcommand()
-def sweep(
+def sweep(  # dead: disable
     gpus_per_proc: int,
     group: str = None,
     notes: str = None,

@@ -27,7 +27,7 @@ class EinLinear(nn.Module):
                 bound = 1 / math.sqrt(fan_in)
                 nn.init.uniform_(self.bias[i], -bound, bound)
 
-    def forward(self, input):
+    def forward(self, input):  # dead: disable
         """
         input : [ B x n_models x input_dim ]
         """
@@ -36,11 +36,6 @@ class EinLinear(nn.Module):
         if self.bias is not None:
             raise RuntimeError()
         return output
-
-    def extra_repr(self):
-        return "n_models={}, in_features={}, out_features={}, bias={}".format(
-            self.n_models, self.in_features, self.out_features, self.bias is not None
-        )
 
 
 class CausalSelfAttention(nn.Module):
@@ -76,7 +71,7 @@ class CausalSelfAttention(nn.Module):
         ##
         self.n_head = n_head
 
-    def forward(self, x, layer_past=None):
+    def forward(self, x):  # dead: disable
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
@@ -134,7 +129,7 @@ class TransformerLayer(nn.Module):
             nn.Dropout(resid_pdrop),
         )
 
-    def forward(self, x):
+    def forward(self, x):  # dead: disable
         x = x + self.attn(self.ln1(x))
         x = x + self.mlp(self.ln2(x))
         return x
@@ -190,9 +185,6 @@ class GPT(nn.Module):
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
 
-    def get_context_size(self):
-        return self.context_size
-
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
             module.weight.data.normal_(mean=0.0, std=0.02)
@@ -202,7 +194,7 @@ class GPT(nn.Module):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    def configure_optimizers(self, train_config):
+    def configure_optimizers(self, train_config):  # dead: disable
         """
         This long function is unfortunately doing something very simple and is being very defensive:
         We are separating out all parameters of the model into two buckets: those that will experience
@@ -293,7 +285,7 @@ class GPT(nn.Module):
             print(i, x_.shape, x_pad_.shape)
             assert (x_ == x_pad_).all()
 
-    def forward(
+    def forward(  # dead: disable
         self, sequence: torch.Tensor, mask: torch.Tensor, weights: torch.Tensor = None
     ):
         """

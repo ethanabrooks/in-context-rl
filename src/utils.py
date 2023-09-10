@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -108,28 +107,3 @@ def get_trajectories(grid_size: int, n_data: int, episode_length: int, n_episode
         current_states = next_states
 
     return goals[:, None].expand_as(states), states, actions, rewards
-
-
-def round_to(tensor, decimals=2):
-    return (tensor * 10**decimals).round() / (10**decimals)
-
-
-def quantize_tensor(tensor, n_bins):
-    # Flatten tensor
-    flat_tensor = tensor.flatten()
-
-    # Sort the flattened tensor
-    sorted_tensor, _ = torch.sort(flat_tensor)
-
-    # Determine the thresholds for each bin
-    n_points_per_bin = int(math.ceil(len(sorted_tensor) / n_bins))
-    thresholds = sorted_tensor[::n_points_per_bin].contiguous()
-
-    # Assign each value in the flattened tensor to a bucket
-    # The bucket number is the quantized value
-    quantized_tensor = torch.bucketize(flat_tensor, thresholds)
-
-    # Reshape the quantized tensor to the original tensor's shape
-    quantized_tensor = quantized_tensor.view(tensor.shape)
-
-    return quantized_tensor

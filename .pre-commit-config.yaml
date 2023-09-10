@@ -6,13 +6,15 @@ repos:
       - id: trailing-whitespace
       - id: check-ast
       - id: check-merge-conflict
-  - repo: local
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 22.12.0
     hooks:
       - id: black
-        name: black
-        entry: black --check
-        language: system
-        types: [python]
+        # It is recommended to specify the latest version of Python
+        # supported by your project here, or alternatively use
+        # pre-commit's default_language_version, see
+        # https://pre-commit.com/#top_level-default_language_version
+        language_version: python3.9
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 2.1.5
     hooks:
@@ -28,3 +30,7 @@ repos:
       - id: isort
         name: isort (python)
         args: ["--profile", "black"]
+  -   repo: https://github.com/asottile/dead
+      rev: v1.5.2
+      hooks:
+      -   id: dead

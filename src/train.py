@@ -1,9 +1,9 @@
-from collections import Counter
 import os
 import random
+from collections import Counter
 from typing import Optional
-import numpy as np
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
