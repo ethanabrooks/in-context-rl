@@ -11,19 +11,19 @@ from torch.utils.data import DataLoader, random_split
 from wandb.sdk.wandb_run import Run
 
 import wandb
-from data import RLData
+from data import RLData, unwrap
 from models import GPT
 from pretty import print_row
-from metrics import get_metrics
 
 
 def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
     net.eval()
     counter = Counter()
+    dataset = unwrap(test_loader.dataset)
     with torch.no_grad():
         for sequence, mask in test_loader:
             logits, loss = net(sequence, mask)
-            log = get_metrics(sequence=sequence, logits=logits, **kwargs)
+            log = dataset.get_metrics(sequence=sequence, logits=logits, **kwargs)
             counter.update(dict(**log, loss=loss.item()))
     log = {k: (v / len(test_loader)) for k, v in counter.items()}
     return log
@@ -66,13 +66,9 @@ def train(
     random.seed(seed)
 
     dataset = RLData(**data_args, n_data=n_steps)
-    observation_dim = dataset.observation_dim
-    action_dim = dataset.action_dim
-    dims = dict(action_dim=action_dim, observation_dim=observation_dim)
-    metrics_args.update(dims)
 
     print("Create net... ", end="", flush=True)
-    net = GPT(n_tokens=dataset.n_tokens, **dims, **model_args).cuda()
+    net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
     print("✓")
 
     # Split the dataset into train and test sets
@@ -100,7 +96,7 @@ def train(
             optimizer.zero_grad()
             weights = dataset.weights(sequence.shape, **weights_args)
             logits, loss = net(sequence, mask, weights)
-            log = get_metrics(sequence=sequence, logits=logits, **metrics_args)
+            log = dataset.get_metrics(sequence=sequence, logits=logits, **metrics_args)
             counter.update(dict(**log, loss=loss.item()))
 
             loss.backward()

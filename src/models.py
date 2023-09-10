@@ -5,8 +5,6 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from data import get_step_dim
-
 
 class EinLinear(nn.Module):
     def __init__(self, n_models, in_features, out_features, bias):
@@ -48,13 +46,12 @@ class EinLinear(nn.Module):
 class CausalSelfAttention(nn.Module):
     def __init__(
         self,
-        action_dim: int,
         attn_pdrop: float,
         context_size: int,
         n_embd: int,
         n_head: int,
-        observation_dim: int,
         resid_pdrop: float,
+        step_dim: int,
     ):
         super().__init__()
         assert n_embd % n_head == 0
@@ -75,8 +72,7 @@ class CausalSelfAttention(nn.Module):
             ),
         )
         ## mask previous value estimates
-        joined_dim = observation_dim + action_dim + 2
-        self.mask.squeeze()[:, joined_dim - 1 :: joined_dim] = 0
+        self.mask.squeeze()[:, step_dim - 1 :: step_dim] = 0
         ##
         self.n_head = n_head
 
@@ -147,20 +143,18 @@ class TransformerLayer(nn.Module):
 class GPT(nn.Module):
     def __init__(
         self,
-        action_dim: int,
         action_weight: float,
         embd_pdrop: float,
         layer_args: dict,
         n_embd: int,
         n_layer: int,
         n_tokens: int,
-        observation_dim: int,
         reward_weight: float,
+        step_dim: int,
         steps_per_context: int,
         value_weight: float,
     ):
         super().__init__()
-        step_dim = get_step_dim(observation_dim, action_dim)
         context_size = steps_per_context * step_dim - 1
 
         # input embedding stem (+1 for stop token)
@@ -172,11 +166,10 @@ class GPT(nn.Module):
         self.blocks = nn.Sequential(
             *[
                 TransformerLayer(
-                    action_dim=action_dim,
                     context_size=context_size,
                     **layer_args,
                     n_embd=n_embd,
-                    observation_dim=observation_dim,
+                    step_dim=step_dim,
                 )
                 for _ in range(n_layer)
             ]
@@ -188,10 +181,7 @@ class GPT(nn.Module):
 
         self.vocab_size = n_tokens
         self.stop_token = n_tokens * step_dim
-        self.block_size = context_size
-        self.observation_dim = observation_dim
-
-        self.action_dim = action_dim
+        self.context_size = context_size
         self.transition_dim = step_dim
         self.action_weight = action_weight
         self.reward_weight = reward_weight
@@ -200,8 +190,8 @@ class GPT(nn.Module):
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
 
-    def get_block_size(self):
-        return self.block_size
+    def get_context_size(self):
+        return self.context_size
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -314,7 +304,7 @@ class GPT(nn.Module):
         mask = mask[:, :-1].contiguous()
 
         b, t = inputs.size()
-        assert t <= self.block_size, "Cannot forward, model block size is exhausted."
+        assert t <= self.context_size, "Cannot forward, model block size is exhausted."
 
         offset_idx = self.offset_tokens(inputs)
         ## [ B x T x embedding_dim ]
@@ -351,31 +341,7 @@ class GPT(nn.Module):
         if weights is None:
             loss = loss.mean()
         else:
-            if (
-                self.action_weight != 1
-                or self.reward_weight != 1
-                or self.value_weight != 1
-            ):
-                #### make weights
-                n_states = int(np.ceil(t / self.transition_dim))
-                old_weights = torch.cat(
-                    [
-                        torch.ones(self.observation_dim, device=inputs.device),
-                        torch.ones(self.action_dim, device=inputs.device)
-                        * self.action_weight,
-                        torch.ones(1, device=inputs.device) * self.reward_weight,
-                        # torch.ones(1, device=inputs.device) * self.value_weight,
-                    ]
-                )
-                ## [ t + 1]
-                old_weights = old_weights.repeat(n_states)
-                ## [ b x t ]
-                old_weights = old_weights[1:].repeat(b, 1)
-                weights = weights[:, 1:]
-                assert (old_weights == weights).all()
-
-                ####
-                loss = loss * weights.reshape(-1)
+            loss = loss * weights[:, 1:].reshape(-1)
             loss = (loss * mask.view(-1)).mean()
 
         return logits, loss
