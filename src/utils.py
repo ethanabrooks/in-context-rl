@@ -107,7 +107,7 @@ def get_trajectories(grid_size: int, n_data: int, episode_length: int, n_episode
         # Update current current_states
         current_states = next_states
 
-    return states, actions, rewards
+    return goals[:, None].expand_as(states), states, actions, rewards
 
 
 def round_to(tensor, decimals=2):

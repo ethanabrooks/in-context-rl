@@ -16,13 +16,15 @@ class RLData(Dataset):
         n_data: int,
     ):
         episode_length = 1 + grid_size * 2
-        self.observations, self.actions, self.rewards = get_trajectories(
+        self.goals, self.observations, self.actions, self.rewards = get_trajectories(
             grid_size=grid_size,
             n_data=n_data,
             episode_length=episode_length,
             n_episodes=1,
         )
-        self.data = self.cat_data(self.observations, self.actions, self.rewards)
+        self.data = self.cat_data(
+            self.goals, self.observations, self.actions, self.rewards
+        )
         sequence = self.split_sequence(self.data)
         for name, component in dict(
             observations=self.observations, actions=self.actions, rewards=self.rewards
@@ -37,16 +39,17 @@ class RLData(Dataset):
 
     @property
     def _dims(self):
+        _, _, goal_dim = self.goals.shape
         _, _, obs_dim = self.observations.shape
-        return [obs_dim, 1, 1]
+        return [goal_dim, obs_dim, 1, 1]
 
     @property
     def step_dim(self):
         return sum(self._dims)
 
-    def cat_data(self, observations, actions, rewards):
+    def cat_data(self, goals, observations, actions, rewards):
         data = torch.cat(
-            [observations, actions[..., None], rewards[..., None]],
+            [goals, observations, actions[..., None], rewards[..., None]],
             dim=-1,
         )
         n_data, _, _ = data.shape
@@ -55,10 +58,12 @@ class RLData(Dataset):
     def split_sequence(self, sequence: torch.Tensor):
         n_batch, _ = sequence.shape
         sequence = sequence.reshape(n_batch, -1, self.step_dim)
-        observations, actions, rewards = sequence.split(self._dims, dim=-1)
+        goals, observations, actions, rewards = sequence.split(self._dims, dim=-1)
         actions = actions.squeeze(-1)
         rewards = rewards.squeeze(-1)
-        return dict(observations=observations, actions=actions, rewards=rewards)
+        return dict(
+            goals=goals, observations=observations, actions=actions, rewards=rewards
+        )
 
     @lru_cache
     def weights(self, shape, **kwargs):
