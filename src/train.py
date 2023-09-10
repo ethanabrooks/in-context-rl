@@ -13,6 +13,7 @@ import wandb
 from data import RLData, unwrap
 from models import GPT
 from pretty import print_row
+from utils import decay_lr
 
 
 def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
@@ -32,6 +33,7 @@ def train(
     data_args: dict,
     grad_norm_clip: float,
     log_freq: int,
+    lr: float,
     metrics_args: dict,
     model_args: dict,
     n_batch: int,
@@ -71,13 +73,15 @@ def train(
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
     print("✓")
 
-    optimizer = net.configure_optimizers(**optimizer_config)
+    optimizer = net.configure_optimizers(lr=lr, **optimizer_config)
 
     # Split the dataset into train and test sets
     test_size = int(test_split * len(dataset))
     train_size = len(dataset) - test_size
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
     counter = Counter()
+    n_tokens = 0
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
@@ -85,32 +89,44 @@ def train(
         test_loader = DataLoader(test_dataset, batch_size=n_batch, shuffle=False)
         for t, (sequence, mask) in enumerate(train_loader):
             step = e * len(train_loader) + t
+
+            # test
             if t % test_freq == 0:
                 log = evaluate(net=net, test_loader=test_loader, **metrics_args)
                 print_row(log, show_header=True)
                 if run is not None:
                     wandb.log({f"test/{k}": v for k, v in log.items()}, step=step)
 
-            if t == int(0.5 * n_steps):
-                optimizer.param_groups[0]["lr"] *= 0.1
+            # gradient update
             net.train()
             optimizer.zero_grad()
             weights = dataset.weights(sequence.shape, **weights_args)
             logits, loss = net(sequence, mask, weights)
-            log = dataset.get_metrics(sequence=sequence, logits=logits, **metrics_args)
-            counter.update(dict(**log, loss=loss.item()))
-
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), grad_norm_clip)
             optimizer.step()
 
+            # update learning rate
+            n_tokens += mask.sum()
+            final_tokens = (
+                n_epochs * len(train_loader) * n_batch * dataset.step_dim
+            )  # number of tokens seen during training
+            decayed_lr = decay_lr(lr, final_tokens=final_tokens, n_tokens=n_tokens)
+            for param_group in optimizer.param_groups:
+                param_group.update(lr=decayed_lr)
+
+            # log
+            log = dataset.get_metrics(sequence=sequence, logits=logits, **metrics_args)
+            counter.update(dict(**log, loss=loss.item()))
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
+                log.update(lr=decayed_lr)
                 counter = Counter()
                 print_row(log, show_header=(t % test_freq == 0))
                 if run is not None:
                     wandb.log({f"train/{k}": v for k, v in log.items()}, step=step)
 
+            # save
             if t % save_freq == 0:
                 torch.save(
                     {"state_dict": net.state_dict()},

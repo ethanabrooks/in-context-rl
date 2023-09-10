@@ -3,6 +3,7 @@ config = dict(
         grid_size=3,
     ),
     grad_norm_clip=1.0,
+    lr=0.001,
     n_batch=50,
     n_epochs=20,
     log_freq=20,
@@ -27,7 +28,6 @@ config = dict(
     ),
     optimizer_config=dict(
         betas=(0.9, 0.95),
-        lr=0.001,
         weight_decay=0.1,
     ),
     n_steps=1000000,
