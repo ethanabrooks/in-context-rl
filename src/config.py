@@ -5,7 +5,6 @@ config = dict(
     n_batch=50,
     n_epochs=20,
     log_freq=20,
-    lr=0.001,
     metrics_args=dict(
         graphs_per_component=7,
     ),
@@ -24,6 +23,11 @@ config = dict(
         action_weight=5,
         reward_weight=1,
         value_weight=1,
+    ),
+    optimizer_config=dict(
+        betas=(0.9, 0.95),
+        lr=0.001,
+        weight_decay=0.1,
     ),
     n_steps=1000000,
     run_name="trial",

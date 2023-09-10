@@ -6,7 +6,6 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from wandb.sdk.wandb_run import Run
 
@@ -32,12 +31,12 @@ def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
 def train(
     data_args: dict,
     log_freq: int,
-    lr: float,
     metrics_args: dict,
     model_args: dict,
     n_batch: int,
     n_epochs: int,
     n_steps: int,
+    optimizer_config: dict,
     run: Optional[Run],
     run_name: str,
     save_freq: int,
@@ -71,13 +70,14 @@ def train(
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
     print("✓")
 
+    optimizer = net.configure_optimizers(**optimizer_config)
+
     # Split the dataset into train and test sets
     test_size = int(test_split * len(dataset))
     train_size = len(dataset) - test_size
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
     counter = Counter()
 
-    optimizer = optim.Adam(net.parameters(), lr=lr)
     for e in range(n_epochs):
         # Split the dataset into train and test sets
         train_loader = DataLoader(train_dataset, batch_size=n_batch, shuffle=True)
