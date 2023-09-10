@@ -44,6 +44,7 @@ def train(
     seed: int,
     test_split: float,
     test_freq: int,
+    weights_args: dict,
 ) -> None:
     save_dir = os.path.join("results", run_name)
 
@@ -97,7 +98,8 @@ def train(
                 optimizer.param_groups[0]["lr"] *= 0.1
             net.train()
             optimizer.zero_grad()
-            logits, loss = net(sequence, mask)
+            weights = dataset.weights(sequence.shape, **weights_args)
+            logits, loss = net(sequence, mask, weights)
             log = get_metrics(sequence=sequence, logits=logits, **metrics_args)
             counter.update(dict(**log, loss=loss.item()))
 

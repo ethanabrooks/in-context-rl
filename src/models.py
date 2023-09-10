@@ -303,9 +303,11 @@ class GPT(nn.Module):
             print(i, x_.shape, x_pad_.shape)
             assert (x_ == x_pad_).all()
 
-    def forward(self, sequence, mask):
+    def forward(
+        self, sequence: torch.Tensor, mask: torch.Tensor, weights: torch.Tensor = None
+    ):
         """
-        sequence : [ B x S ]
+        sequence : [ B x (T+1) ]
         """
         inputs = sequence[:, :-1].contiguous()
         targets = sequence[:, 1:].contiguous()
@@ -339,13 +341,16 @@ class GPT(nn.Module):
         ## [ B x T x (vocab_size + 1) ]
         logits = logits[:, :t]
 
+        loss = F.cross_entropy(
+            logits.reshape(-1, logits.size(-1)),
+            targets.view(-1),
+            reduction="none",
+        )
+
         # if we are given some desired targets also calculate the loss
-        if targets is not None:
-            loss = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)),
-                targets.view(-1),
-                reduction="none",
-            )
+        if weights is None:
+            loss = loss.mean()
+        else:
             if (
                 self.action_weight != 1
                 or self.reward_weight != 1
@@ -353,7 +358,7 @@ class GPT(nn.Module):
             ):
                 #### make weights
                 n_states = int(np.ceil(t / self.transition_dim))
-                weights = torch.cat(
+                old_weights = torch.cat(
                     [
                         torch.ones(self.observation_dim, device=inputs.device),
                         torch.ones(self.action_dim, device=inputs.device)
@@ -363,13 +368,14 @@ class GPT(nn.Module):
                     ]
                 )
                 ## [ t + 1]
-                weights = weights.repeat(n_states)
+                old_weights = old_weights.repeat(n_states)
                 ## [ b x t ]
-                weights = weights[1:].repeat(b, 1)
+                old_weights = old_weights[1:].repeat(b, 1)
+                weights = weights[:, 1:]
+                assert (old_weights == weights).all()
+
                 ####
-                loss = loss * weights.view(-1)
+                loss = loss * weights.reshape(-1)
             loss = (loss * mask.view(-1)).mean()
-        else:
-            loss = None
 
         return logits, loss

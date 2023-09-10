@@ -1,3 +1,4 @@
+from functools import lru_cache
 import math
 import matplotlib.pyplot as plt
 import torch
@@ -150,15 +151,7 @@ class RLData(Dataset):
             episode_length=episode_length,
             n_episodes=1,
         )
-        self.data = (
-            torch.cat(
-                [self.observations, self.actions[..., None], self.rewards[..., None]],
-                dim=-1,
-            )
-            .long()
-            .reshape(n_data, -1)
-            .contiguous()
-        ).cuda()
+        self.data = self.cat_data(self.observations, self.actions, self.rewards).cuda()
         self.mask = torch.ones_like(self.data).cuda()
 
     @property
@@ -173,6 +166,31 @@ class RLData(Dataset):
     def observation_dim(self):
         _, _, observation_dim = self.observations.shape
         return observation_dim
+
+    @property
+    def step_dim(self):
+        _, _, observation_dim = self.observations.shape
+        return observation_dim + 1 + 1
+
+    def cat_data(self, observations, actions, rewards):
+        data = torch.cat(
+            [observations, actions[..., None], rewards[..., None]],
+            dim=-1,
+        )
+        n_data, _, _ = data.shape
+        return data.long().reshape(n_data, -1).contiguous()
+
+    def split_sequence(self, sequence: torch.Tensor):
+        return split_sequence(sequence, self.observation_dim, self.action_dim)
+
+    @lru_cache
+    def weights(self, shape, **kwargs):
+        weights = torch.ones(shape)
+        sequence = self.split_sequence(weights)
+        for k, v in kwargs.items():
+            assert k in sequence, f"Invalid key {k}"
+            sequence[k] *= v
+        return self.cat_data(**sequence).cuda()
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
@@ -191,6 +209,6 @@ def split_sequence(sequence, observation_dim, action_dim):
     sequence = sequence.reshape(n_batch, -1, transition_dim)
 
     observations = sequence[:, :, :observation_dim]
-    actions = sequence[:, :, observation_dim : observation_dim + action_dim]
+    actions = sequence[:, :, observation_dim]
     rewards = sequence[:, :, -1]
     return dict(observations=observations, actions=actions, rewards=rewards)

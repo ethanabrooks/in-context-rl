@@ -10,7 +10,6 @@ config = dict(
         graphs_per_component=7,
     ),
     model_args=dict(
-        action_weight=5,
         layer_args=dict(
             causal_self_attention_args=dict(
                 attn_pdrop=0.1,
@@ -21,8 +20,9 @@ config = dict(
         embd_pdrop=0.1,
         n_embd=32,
         n_layer=4,
-        reward_weight=1,
         steps_per_context=50,
+        action_weight=5,
+        reward_weight=1,
         value_weight=1,
     ),
     n_steps=1000000,
@@ -31,4 +31,9 @@ config = dict(
     seed=0,
     test_split=0.02,
     test_freq=100,
+    weights_args=dict(
+        actions=5,
+        rewards=1,
+        # values=1,
+    ),
 )
