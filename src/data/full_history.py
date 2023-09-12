@@ -17,6 +17,7 @@ class Data(data.base.Data):
         self,
         grid_size: int,
         grid_world_args: dict,
+        include_goal: bool,
         n_data: int,
         steps_per_context: int,
         value_iteration_args: dict,
@@ -44,10 +45,16 @@ class Data(data.base.Data):
 
         components = zip(*list(collect_data()))
         components = [torch.cat(c, dim=1) for c in components]
-        (self.goals, self.observations, self.actions, self.rewards, self.done,) = (
-            *components,
-            _,
+        (
+            self.goals,
+            self.observations,
+            self.actions,
+            self.rewards,
+            self.done,
         ) = components
+        if not include_goal:
+            self.goals = torch.zeros_like(self.goals)
+        components = [self.goals, self.observations, self.actions, self.rewards]
         masks = [
             expand_as(~self.done, c).roll(dims=[1], shifts=[1])
             for c in [self.goals, self.observations]

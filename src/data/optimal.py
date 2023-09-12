@@ -14,19 +14,26 @@ class Data(data.base.Data):
     def __init__(
         self,
         grid_size: int,
+        include_goal: bool,
         n_data: int,
         n_episodes: int,
     ):
         episode_length = 1 + grid_size * 2
         grid_world = GridWorld(grid_size, n_data)
-        (self.goals, self.observations, self.actions, self.rewards, self.done,) = (
-            *components,
-            _,
+        (
+            self.goals,
+            self.observations,
+            self.actions,
+            self.rewards,
+            self.done,
         ) = grid_world.get_trajectories(
             episode_length=episode_length,
             n_episodes=n_episodes,
             Pi=grid_world.compute_policy_towards_goal(),
         )
+        if not include_goal:
+            self.goals = torch.zeros_like(self.goals)
+        components = [self.goals, self.observations, self.actions, self.rewards]
         masks = [
             expand_as(~self.done, c).roll(dims=[1], shifts=[1])
             for c in [self.goals, self.observations]
