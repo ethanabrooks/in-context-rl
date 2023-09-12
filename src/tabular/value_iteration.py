@@ -13,28 +13,6 @@ class ValueIteration(GridWorld):
         self.atol = atol
         self.gamma = gamma
 
-        # Compute next states for each action and state for each batch (goal)
-        next_states = self.states[:, None] + self.deltas[None, :]
-        next_states = torch.clamp(next_states, 0, self.grid_size - 1)
-        S_ = (
-            next_states[..., 0] * self.grid_size + next_states[..., 1]
-        )  # Convert to indices
-
-        # Determine if next_state is the goal for each batch (goal)
-        is_goal = (self.goals[:, None] == self.states[None]).all(-1)
-
-        # Modify transition to go to absorbing state if the next state is a goal
-        absorbing_state_idx = self.n_states - 1
-        S_ = S_[None].tile(self.n_tasks, 1, 1)
-        S_[is_goal[..., None].expand_as(S_)] = absorbing_state_idx
-
-        # Insert row for absorbing state
-        padding = (0, 0, 0, 1)  # left 0, right 0, top 0, bottom 1
-        S_ = F.pad(S_, padding, value=absorbing_state_idx)
-        self.T = F.one_hot(S_, num_classes=self.n_states).float()
-        R = is_goal.float()[..., None].tile(1, 1, len(self.deltas))
-        self.R = F.pad(R, padding, value=0)  # Insert row for absorbing state
-
     def check_V(self, V: torch.Tensor):
         B = self.n_tasks
         N = self.n_states
