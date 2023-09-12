@@ -113,26 +113,7 @@ class GridWorld:
                 .long()
             )
 
-            # Compute next state indices
-            next_state_indices = torch.argmax(
-                self.T[torch.arange(B), current_state_indices, A], dim=1
-            )
-
-            # Convert next state indices to coordinates
-            next_states = torch.stack(
-                (
-                    next_state_indices // self.grid_size,
-                    next_state_indices % self.grid_size,
-                ),
-                dim=1,
-            )
-            R = self.R[torch.arange(B), current_state_indices, A]
-
-            next_states_, R_, _, _ = self.step_fn(current_states, A)
-            if not (next_states == next_states_).all():
-                breakpoint()
-            if not (R == R_).all():
-                breakpoint()
+            next_states, R, _, _ = self.step_fn(current_states, A)
 
             # Store the current current_states and rewards
             states[:, t] = current_states
