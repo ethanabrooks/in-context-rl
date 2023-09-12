@@ -113,11 +113,6 @@ class GridWorld:
                 .long()
             )
 
-            # Store the current current_states and rewards
-            states[:, t] = current_states
-            actions[:, t] = A
-            rewards[:, t] = self.R[torch.arange(B), current_state_indices, A]
-
             # Compute next state indices
             next_state_indices = torch.argmax(
                 self.T[torch.arange(B), current_state_indices, A], dim=1
@@ -131,6 +126,18 @@ class GridWorld:
                 ),
                 dim=1,
             )
+            R = self.R[torch.arange(B), current_state_indices, A]
+
+            next_states_, R_, _, _ = self.step_fn(current_states, A)
+            if not (next_states == next_states_).all():
+                breakpoint()
+            if not (R == R_).all():
+                breakpoint()
+
+            # Store the current current_states and rewards
+            states[:, t] = current_states
+            actions[:, t] = A
+            rewards[:, t] = R
 
             # Update current current_states
             current_states = next_states
@@ -143,6 +150,34 @@ class GridWorld:
 
     def sample_goals(self, n: int):
         return torch.randint(0, self.grid_size, (n, 2))
+
+    def step_fn(
+        self,
+        current_states: torch.Tensor,
+        actions: torch.Tensor,
+    ):
+        B = self.n_tasks
+        # Convert current current_states to indices
+        current_state_indices = (
+            current_states[:, 0] * self.grid_size + current_states[:, 1]
+        )
+
+        rewards = self.R[torch.arange(B), current_state_indices, actions]
+
+        # Compute next state indices
+        next_state_indices = torch.argmax(
+            self.T[torch.arange(B), current_state_indices, actions], dim=1
+        )
+
+        # Convert next state indices to coordinates
+        next_states = torch.stack(
+            (
+                next_state_indices // self.grid_size,
+                next_state_indices % self.grid_size,
+            ),
+            dim=1,
+        )
+        return next_states, rewards, False, {}
 
     def visualize_policy(self, Pi, task_idx: int = 0):  # dead:disable
         self.check_pi(Pi)
