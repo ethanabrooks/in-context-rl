@@ -6,7 +6,7 @@ n_batch: 50
 n_epochs: 20
 log_freq: 20
 metrics_args:
-  graphs_per_component: 7
+  steps_per_graph: 1
 model_args:
   layer_args:
     causal_self_attention_args:

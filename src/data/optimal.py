@@ -61,8 +61,8 @@ class Data(data.base.Data):
     def get_metrics(
         self,
         logits: torch.Tensor,
-        graphs_per_component: int,
         sequence: torch.Tensor,
+        steps_per_graph: int,
     ):
         n_batch, seq_len = sequence.shape
         n_batch2, seq_len2, _ = logits.shape
@@ -91,10 +91,10 @@ class Data(data.base.Data):
             assert name == name2
             acc[f"{name} accuracy"] = pred == tgt
             _, seq_len, *_ = pred.shape
-            chunk_size = seq_len // graphs_per_component
+            graphs_per_component = seq_len // steps_per_graph
             for i in range(graphs_per_component):
-                start = i * chunk_size
-                end = (i + 1) * chunk_size
+                start = i * steps_per_graph
+                end = (i + 1) * steps_per_graph
 
                 def get_chunk(x):
                     if x.ndim == 2:
