@@ -94,11 +94,11 @@ class GridWorld:
         actions = torch.zeros((B, trajectory_length), dtype=torch.int)
         rewards = torch.zeros((B, trajectory_length))
         done = torch.zeros((B, trajectory_length), dtype=torch.bool)
-        current_states = torch.randint(0, self.grid_size, (self.n_tasks, 2))
+        current_states = self.reset_fn()
 
         for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
             if (t) % episode_length == 0:
-                current_states = torch.randint(0, self.grid_size, (self.n_tasks, 2))
+                current_states = self.reset_fn()
             if (t + 1) % episode_length == 0:
                 done[:, t] = True
             # Convert current current_states to indices
@@ -128,6 +128,9 @@ class GridWorld:
     @property
     def n_states(self):
         return self.grid_size**2 + 1
+
+    def reset_fn(self):
+        return torch.randint(0, self.grid_size, (self.n_tasks, 2))
 
     def sample_goals(self, n: int):
         return torch.randint(0, self.grid_size, (n, 2))
