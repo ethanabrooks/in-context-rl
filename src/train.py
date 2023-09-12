@@ -25,7 +25,9 @@ def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
     with torch.no_grad():
         for sequence, mask in test_loader:
             logits, loss = net(sequence, mask)
-            log = dataset.get_metrics(sequence=sequence, logits=logits, **kwargs)
+            log = dataset.get_metrics(
+                logits=logits, mask=mask, sequence=sequence, **kwargs
+            )
             counter.update(dict(**log, loss=loss.item()))
     log = {k: (v / len(test_loader)) for k, v in counter.items()}
     return log
@@ -119,7 +121,9 @@ def train(
                 param_group.update(lr=decayed_lr)
 
             # log
-            log = dataset.get_metrics(sequence=sequence, logits=logits, **metrics_args)
+            log = dataset.get_metrics(
+                logits=logits, mask=mask, sequence=sequence, **metrics_args
+            )
             counter.update(dict(**log, loss=loss.item()))
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}

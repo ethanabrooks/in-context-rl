@@ -293,7 +293,7 @@ class GPT(nn.Module):
         """
         inputs = sequence[:, :-1].contiguous()
         targets = sequence[:, 1:].contiguous()
-        mask = mask[:, :-1].contiguous()
+        mask = mask[:, 1:].contiguous()
 
         b, t = inputs.size()
         assert t <= self.context_size, "Cannot forward, model block size is exhausted."

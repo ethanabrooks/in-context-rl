@@ -4,6 +4,12 @@ import data.base
 from tabular.grid_world import GridWorld
 
 
+def expand_as(x: torch.Tensor, y: torch.Tensor):
+    while x.dim() < y.dim():
+        x = x[..., None]
+    return x.expand_as(y)
+
+
 class Data(data.base.Data):
     def __init__(
         self,
@@ -11,28 +17,34 @@ class Data(data.base.Data):
         n_data: int,
     ):
         episode_length = 1 + grid_size * 2
-        grid_world = GridWorld(grid_size=grid_size, n_tasks=n_data)
-        (
-            self.goals,
-            self.observations,
-            self.actions,
-            self.rewards,
+        grid_world = GridWorld(grid_size, n_data)
+        (self.goals, self.observations, self.actions, self.rewards, self.done,) = (
+            *components,
             _,
         ) = grid_world.get_trajectories(
             episode_length=episode_length,
             n_episodes=1,
             Pi=grid_world.compute_policy_towards_goal(),
         )
-        self.data = self.cat_sequence(
-            self.goals, self.observations, self.actions, self.rewards
-        )
+        masks = [
+            expand_as(~self.done, c).roll(dims=[1], shifts=[1])
+            for c in [self.goals, self.observations]
+        ] + [torch.ones_like(c) for c in [self.actions, self.rewards]]
+        self.mask = self.cat_sequence(*masks)
+        self.data = self.cat_sequence(*components)
         sequence = self.split_sequence(self.data)
         for name, component in dict(
             observations=self.observations, actions=self.actions, rewards=self.rewards
         ).items():
             assert (sequence[name] == component).all()
         self.data = self.data.cuda()
-        self.mask = torch.ones_like(self.data).cuda()
+        self.mask = self.mask.cuda()
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.mask[idx]
+
+    def __len__(self):
+        return len(self.data)
 
     @property
     def _dims(self):
@@ -61,6 +73,7 @@ class Data(data.base.Data):
     def get_metrics(
         self,
         logits: torch.Tensor,
+        mask: torch.Tensor,
         sequence: torch.Tensor,
         steps_per_graph: int,
     ):
@@ -74,36 +87,45 @@ class Data(data.base.Data):
         tgts = sequence
         split_preds = self.split_sequence(preds)
         split_tgts = self.split_sequence(tgts)
+        split_masks = self.split_sequence(mask)
 
         acc = {}
-        for (name, pred), (name2, tgt) in zip(
-            dict(**split_preds, total=preds).items(),
-            dict(**split_tgts, total=tgts).items(),
-        ):
-            assert name == name2
-            acc[f"{name} accuracy"] = pred == tgt
+        acc["(total) accuracy"] = (preds == tgts)[mask.bool()]
+        iterator = list(
+            zip(
+                split_preds.items(),
+                split_tgts.items(),
+                split_masks.items(),
+            )
+        )
+        for (name, pred), (name2, tgt), (name3, mask) in iterator:
+            assert name == name2 == name3
+            total_accuracy = (pred == tgt)[mask.bool()]
+            acc[f"(total) {name} accuracy"] = total_accuracy
 
-        chunk_acc = {}
-        for (name, pred), (name2, tgt) in zip(
-            split_preds.items(),
-            split_tgts.items(),
-        ):
-            assert name == name2
-            acc[f"{name} accuracy"] = pred == tgt
-            _, seq_len, *_ = pred.shape
-            graphs_per_component = seq_len // steps_per_graph
-            for i in range(graphs_per_component):
-                start = i * steps_per_graph
-                end = (i + 1) * steps_per_graph
+        for i in range(seq_len):
+            for (name, pred), (name2, tgt), (name3, mask) in iterator:
+                assert name == name2 == name3
+                _, component_seq_len, *_ = pred[mask].shape
+                graphs_per_component = component_seq_len // steps_per_graph
 
-                def get_chunk(x):
+                if i >= graphs_per_component:
+                    continue
+
+                def get_chunk(x, start, end):
                     if x.ndim == 2:
                         x = x[..., None]
                     return x[:, start:end]
 
-                pred_chunk = get_chunk(pred)
-                tgt_chunk = get_chunk(tgt)
-                chunk_acc[f"({i}) {name} accuracy"] = pred_chunk == tgt_chunk
+                start = i * steps_per_graph
+                end = (i + 1) * steps_per_graph
 
-        logs = dict(**acc, **chunk_acc)
-        return {k: v.float().mean().item() for k, v in logs.items()}
+                pred_chunk = get_chunk(pred, start, end)
+                tgt_chunk = get_chunk(tgt, start, end)
+                mask_chunk = get_chunk(mask, start, end)
+                if mask_chunk.sum() > 0:
+                    acc[f"({i}) {name} accuracy"] = (pred_chunk == tgt_chunk)[
+                        mask_chunk.bool()
+                    ]
+
+        return {k: v.float().mean().item() for k, v in acc.items()}
