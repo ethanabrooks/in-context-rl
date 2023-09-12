@@ -15,21 +15,16 @@ class Data(data.base.Data):
         self,
         grid_size: int,
         n_data: int,
+        n_episodes: int,
     ):
         episode_length = 1 + grid_size * 2
         grid_world = GridWorld(grid_size, n_data)
-        (
-            self.goals,
-            self.observations,
-            self.actions,
-            self.rewards,
-            self.done,
-        ) = (
+        (self.goals, self.observations, self.actions, self.rewards, self.done,) = (
             *components,
             _,
         ) = grid_world.get_trajectories(
             episode_length=episode_length,
-            n_episodes=2,
+            n_episodes=n_episodes,
             Pi=grid_world.compute_policy_towards_goal(),
         )
         masks = [

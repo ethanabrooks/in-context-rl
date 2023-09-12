@@ -1,3 +1,4 @@
 
 data_args:
   grid_size: 3
+  n_episodes: 2
