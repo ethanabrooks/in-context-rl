@@ -18,7 +18,13 @@ class Data(data.base.Data):
     ):
         episode_length = 1 + grid_size * 2
         grid_world = GridWorld(grid_size, n_data)
-        (self.goals, self.observations, self.actions, self.rewards, self.done,) = (
+        (
+            self.goals,
+            self.observations,
+            self.actions,
+            self.rewards,
+            self.done,
+        ) = (
             *components,
             _,
         ) = grid_world.get_trajectories(
@@ -30,15 +36,14 @@ class Data(data.base.Data):
             expand_as(~self.done, c).roll(dims=[1], shifts=[1])
             for c in [self.goals, self.observations]
         ] + [torch.ones_like(c) for c in [self.actions, self.rewards]]
-        self.mask = self.cat_sequence(*masks)
-        self.data = self.cat_sequence(*components)
-        sequence = self.split_sequence(self.data)
-        for name, component in dict(
-            observations=self.observations, actions=self.actions, rewards=self.rewards
-        ).items():
-            assert (sequence[name] == component).all()
-        self.data = self.data.cuda()
-        self.mask = self.mask.cuda()
+        mask = self.cat_sequence(*masks)
+        data = self.cat_sequence(*components)
+        sequence = self.split_sequence(data)
+        sequence = self.split_sequence(data)
+        for name, component in sequence.items():
+            assert (getattr(self, name) == component).all()
+        self.data = data.cuda()
+        self.mask = mask.cuda()
 
     def __getitem__(self, idx):
         return self.data[idx], self.mask[idx]
