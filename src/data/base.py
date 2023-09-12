@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import lru_cache
 
 import torch
@@ -14,6 +14,20 @@ class Data(Dataset, ABC):
     def step_dim(self):
         return sum(self._dims)
 
+    @abstractmethod
+    def cat_sequence(self, goals, observations, actions, rewards):
+        raise NotImplementedError
+
+    @abstractmethod
+    def split_sequence(self, sequence: torch.Tensor):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_metrics(
+        self, logits: torch.Tensor, graphs_per_component: int, sequence: torch.Tensor
+    ):
+        raise NotImplementedError
+
     @lru_cache
     def weights(self, shape, **kwargs):
         weights = torch.ones(shape)
@@ -22,12 +36,6 @@ class Data(Dataset, ABC):
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
         return self.cat_sequence(**sequence).cuda()
-
-    def __getitem__(self, idx):
-        return self.data[idx], self.mask[idx]
-
-    def __len__(self):
-        return len(self.data)
 
 
 def unwrap(dataset: Dataset):
