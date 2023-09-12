@@ -23,7 +23,7 @@ class Data(data.base.Data):
             _,
         ) = grid_world.get_trajectories(
             episode_length=episode_length,
-            n_episodes=1,
+            n_episodes=2,
             Pi=grid_world.compute_policy_towards_goal(),
         )
         masks = [
