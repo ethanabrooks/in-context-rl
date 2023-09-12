@@ -21,7 +21,9 @@ def get_config(config_name):
     root = Path("configs")
     base_config = OmegaConf.load(root / "base.yml")
     config = OmegaConf.load(root / f"{config_name}.yml")
-    return OmegaConf.merge(base_config, config)
+    merged = OmegaConf.merge(base_config, config)
+    resolved = OmegaConf.to_container(merged, resolve=True)
+    return resolved
 
 
 def get_data_path(name):
