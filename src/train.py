@@ -14,8 +14,8 @@ import data
 import wandb
 from data.base import unwrap
 from models import GPT
+from optimizer import configure, decay_lr
 from pretty import print_row
-from utils import decay_lr
 
 
 def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
@@ -78,7 +78,7 @@ def train(
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
     print("✓")
 
-    optimizer = net.configure_optimizers(lr=lr, **optimizer_config)
+    optimizer = configure(lr=lr, module=net, **optimizer_config)
 
     # Split the dataset into train and test sets
     test_size = int(test_split * len(dataset))
