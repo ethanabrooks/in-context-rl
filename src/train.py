@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Optional
@@ -91,6 +92,7 @@ def train(
 
     counter = Counter()
     n_tokens = 0
+    tick = time.time()
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
@@ -132,8 +134,9 @@ def train(
             counter.update(dict(**log, loss=loss.item()))
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
-                log.update(lr=decayed_lr)
+                log.update(lr=decayed_lr, time=(time.time() - tick) / log_freq)
                 counter = Counter()
+                tick = time.time()
                 print_row(log, show_header=(t % test_freq == 0))
                 if run is not None:
                     wandb.log({f"train/{k}": v for k, v in log.items()}, step=step)
