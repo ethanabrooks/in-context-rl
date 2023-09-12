@@ -1,0 +1,12 @@
+
+data_args:
+  grid_size: 3
+  grid_world_args:
+    atol: 0.2
+    gamma: 0.99
+  steps_per_context: ${model_args.steps_per_context}
+  value_iteration_args:
+    n_policies: 1
+test_split: 0.0005
+n_steps: 100_000
+n_epochs: 2

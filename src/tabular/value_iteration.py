@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from tabular.grid_world import GridWorld
 
 
-class ValueIteration(GridWorld):  # dead: disable
+class ValueIteration(GridWorld):
     def __init__(self, atol: float = 0.02, gamma: float = 0.99, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.atol = atol
@@ -40,7 +40,7 @@ class ValueIteration(GridWorld):  # dead: disable
         N = self.n_states
         assert [*V.shape] == [B, N]
 
-    def value_iteration(  # dead: disable
+    def value_iteration(
         self,
         n_policies: int,
         n_rounds: int,
