@@ -36,6 +36,22 @@ def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
     return log
 
 
+def set_seed(seed: int):
+    # Set the seed for PyTorch
+    torch.manual_seed(seed)
+
+    # If you are using CUDA (GPU), you also need to set the seed for the CUDA device
+    # This ensures reproducibility for GPU calculations as well
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    # Set the seed for NumPy
+    np.random.seed(seed)
+
+    # Set the seed for Python's random module
+    random.seed(seed)
+
+
 def train(
     data_args: dict,
     data_path: Path,
@@ -56,23 +72,10 @@ def train(
     weights_args: dict,
 ) -> None:
     save_dir = os.path.join("results", run_name)
+    set_seed(seed)
 
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-
-    # Set the seed for PyTorch
-    torch.manual_seed(seed)
-
-    # If you are using CUDA (GPU), you also need to set the seed for the CUDA device
-    # This ensures reproducibility for GPU calculations as well
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-    # Set the seed for NumPy
-    np.random.seed(seed)
-
-    # Set the seed for Python's random module
-    random.seed(seed)
 
     dataset = data.make(data_path, **data_args)
 
