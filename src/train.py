@@ -139,7 +139,7 @@ def train(
                 log.update(lr=decayed_lr, time=(time.time() - tick) / log_freq)
                 counter = Counter()
                 tick = time.time()
-                print_row(log, show_header=(t % test_freq == 0))
+                print_row(dict(step=step, **log), show_header=(t % test_freq == 0))
                 if run is not None:
                     wandb.log({f"train/{k}": v for k, v in log.items()}, step=step)
 
