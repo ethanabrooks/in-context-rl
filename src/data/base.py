@@ -19,13 +19,13 @@ class Data(Dataset, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def split_sequence(self, sequence: torch.Tensor):
-        raise NotImplementedError
-
-    @abstractmethod
     def get_metrics(
         self, logits: torch.Tensor, graphs_per_component: int, sequence: torch.Tensor
     ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def split_sequence(self, sequence: torch.Tensor):
         raise NotImplementedError
 
     @lru_cache
