@@ -27,7 +27,7 @@ class EinLinear(nn.Module):
                 bound = 1 / math.sqrt(fan_in)
                 nn.init.uniform_(self.bias[i], -bound, bound)
 
-    def forward(self, input):  # dead: disable
+    def forward(self, input):
         """
         input : [ B x n_models x input_dim ]
         """
@@ -71,7 +71,7 @@ class CausalSelfAttention(nn.Module):
         ##
         self.n_head = n_head
 
-    def forward(self, x):  # dead: disable
+    def forward(self, x):
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
@@ -129,7 +129,7 @@ class TransformerLayer(nn.Module):
             nn.Dropout(resid_pdrop),
         )
 
-    def forward(self, x):  # dead: disable
+    def forward(self, x):
         x = x + self.attn(self.ln1(x))
         x = x + self.mlp(self.ln2(x))
         return x
@@ -220,7 +220,7 @@ class GPT(nn.Module):
             print(i, x_.shape, x_pad_.shape)
             assert (x_ == x_pad_).all()
 
-    def forward(  # dead: disable
+    def forward(
         self, sequence: torch.Tensor, mask: torch.Tensor, weights: torch.Tensor = None
     ):
         """

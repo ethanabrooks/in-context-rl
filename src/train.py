@@ -115,7 +115,7 @@ def train(
             net.train()
             optimizer.zero_grad()
             weights = dataset.weights(sequence.shape, **weights_args)
-            logits, loss = net(sequence, mask, weights)
+            logits, loss = net.forward(sequence, mask, weights)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), grad_norm_clip)
             optimizer.step()
