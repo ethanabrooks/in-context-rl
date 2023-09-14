@@ -19,6 +19,7 @@ class Data(data.base.Data):
         grid_world_args: dict,
         include_goal: bool,
         n_data: int,
+        n_episodes: int,
         optimal_policy: bool,
         steps_per_context: int,
         value_iteration_args: dict,
@@ -37,7 +38,7 @@ class Data(data.base.Data):
                 (grid_world.value_iteration(**value_iteration_args, n_rounds=n_rounds))
             ):
                 g, s, a, r, d = grid_world.get_trajectories(
-                    Pi=Pi, episode_length=episode_length
+                    Pi=Pi, episode_length=episode_length, n_episodes=n_episodes
                 )
                 console.log(
                     f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."

@@ -4,6 +4,7 @@ data_args:
     atol: 0.2
     gamma: 0.99
   include_goal: true
+  n_episodes: 1
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
     n_policies: 1
