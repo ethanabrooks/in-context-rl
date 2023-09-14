@@ -14,9 +14,12 @@ class Data(data.base.Data):
     def __init__(
         self,
         grid_size: int,
+        grid_world_args: dict,
         include_goal: bool,
         n_data: int,
         n_episodes: int,
+        steps_per_context: int,
+        value_iteration_args: dict,
     ):
         episode_length = 1 + grid_size * 2
         grid_world = GridWorld(grid_size, n_data)

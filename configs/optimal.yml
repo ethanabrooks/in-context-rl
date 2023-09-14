@@ -1,6 +1,6 @@
 
 data_args:
-  grid_size: 3
   include_goal: true
   n_data: 1_000_000
   n_episodes: 2
+n_epochs: 20

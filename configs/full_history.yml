@@ -1,13 +1,4 @@
 
 data_args:
-  grid_size: 3
-  grid_world_args:
-    atol: 0.2
-    gamma: 0.99
-  include_goal: true
   n_data: 100_000
-  steps_per_context: ${model_args.steps_per_context}
-  value_iteration_args:
-    n_policies: 1
-n_epochs: 2
 test_split: 0.0005
