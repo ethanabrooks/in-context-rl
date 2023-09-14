@@ -2,8 +2,8 @@ import torch
 import torch.nn.functional as F
 
 import data.base
+from envs.value_iteration import ValueIteration
 from pretty import console
-from tabular.value_iteration import ValueIteration
 
 
 def expand_as(x: torch.Tensor, y: torch.Tensor):
