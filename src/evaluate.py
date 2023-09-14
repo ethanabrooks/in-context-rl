@@ -28,6 +28,13 @@ def evaluate(dataset: Data, net: GPT, n_rollouts: int, **kwargs):
     return pd.DataFrame(records)
 
 
+def get_return(*rewards: float, gamma: float):
+    actual_return = 0.0
+    for r in rewards[::-1]:
+        actual_return = r + gamma * actual_return
+    return actual_return
+
+
 def rollout(
     dataset: Data,
     gamma: float,
@@ -43,7 +50,7 @@ def rollout(
     act_card = env.action_space.n
 
     history = []
-    total_reward = 0
+    rewards = []
 
     while True:
         history.extend([task, observation])
@@ -68,11 +75,18 @@ def rollout(
         probs = logits.softmax(dim=-1)
         [action] = torch.multinomial(probs, num_samples=1).T
 
-        observation, reward, done, _ = env.step(action.cpu())
-        total_reward = gamma * total_reward + reward
+        observation, reward, done, info = env.step(action.cpu())
+        rewards.append(reward)
         if done:
-            yield total_reward.item()
-            total_reward = 0
+            actual_return = get_return(*rewards, gamma=gamma)
+            optimal = info.get("optimal", None)
+            if optimal is None:
+                yield actual_return.item()
+            else:
+                optimal_return = get_return(*optimal, gamma=gamma)
+                regret = optimal_return - actual_return
+                yield regret.item()
+            rewards = []
             observation = env.reset().cuda()
 
         # extend history

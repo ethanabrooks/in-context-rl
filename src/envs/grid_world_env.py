@@ -12,6 +12,7 @@ class Env(GridWorld, Env):
         super().__init__(*args, n_tasks=1, **kwargs)
         self.t = None
         self.current_state = None
+        self.initial_state = None
 
     @property
     def action_space(self):
@@ -29,6 +30,10 @@ class Env(GridWorld, Env):
         self.current_state = self.reset_fn()
         [s] = self.current_state
         self.t = 0
+        distance = torch.abs(self.get_task() - s).sum()
+        self.optimal = (
+            [0.0] * distance + [1.0] + [0.0] * (self.episode_length - distance - 1)
+        )
         return s
 
     def step(self, action: Union[torch.Tensor, int]):
@@ -38,4 +43,6 @@ class Env(GridWorld, Env):
         self.current_state, [r], d, i = self.step_fn(self.current_state, action, self.t)
         [s] = self.current_state
         self.t += 1
+        if d:
+            i.update(optimal=self.optimal)
         return s, r, d, i
