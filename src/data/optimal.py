@@ -1,12 +1,4 @@
-import torch
-
 import data.full_history
-
-
-def expand_as(x: torch.Tensor, y: torch.Tensor):
-    while x.dim() < y.dim():
-        x = x[..., None]
-    return x.expand_as(y)
 
 
 class Data(data.full_history.Data):
