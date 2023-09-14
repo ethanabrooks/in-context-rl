@@ -28,7 +28,10 @@ class Data(data.base.Data):
         self.steps_per_context = steps_per_context
         episode_length = 1 + grid_size * 2
         grid_world = ValueIteration(
-            **grid_world_args, grid_size=grid_size, n_tasks=n_data
+            episode_length=episode_length,
+            **grid_world_args,
+            grid_size=grid_size,
+            n_tasks=n_data,
         )
         n_rounds = 2 * grid_size - 1
 
@@ -38,7 +41,7 @@ class Data(data.base.Data):
                 (grid_world.value_iteration(**value_iteration_args, n_rounds=n_rounds))
             ):
                 g, s, a, r, d = grid_world.get_trajectories(
-                    Pi=Pi, episode_length=episode_length, n_episodes=n_episodes
+                    Pi=Pi, n_episodes=n_episodes
                 )
                 console.log(
                     f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."

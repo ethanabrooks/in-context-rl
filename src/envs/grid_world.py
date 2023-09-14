@@ -5,7 +5,9 @@ from tqdm import tqdm
 
 
 class GridWorld:
-    def __init__(self, grid_size: int, n_tasks: int):
+    def __init__(self, episode_length: int, grid_size: int, n_tasks: int):
+        super().__init__()
+        self.episode_length = episode_length
         self.grid_size = grid_size
         self.states = torch.tensor(
             [[i, j] for i in range(grid_size) for j in range(grid_size)]
@@ -44,7 +46,6 @@ class GridWorld:
 
     def get_trajectories(
         self,
-        episode_length: int,
         Pi: torch.Tensor,
         n_episodes: int = 1,
     ):
@@ -53,7 +54,7 @@ class GridWorld:
         A = len(self.deltas)
         assert [*Pi.shape] == [B, N, A]
 
-        trajectory_length = episode_length * n_episodes
+        trajectory_length = self.episode_length * n_episodes
         states = torch.zeros((B, trajectory_length, 2), dtype=torch.int)
         actions = torch.zeros((B, trajectory_length), dtype=torch.int)
         rewards = torch.zeros((B, trajectory_length))
@@ -61,9 +62,9 @@ class GridWorld:
         current_states = self.reset_fn()
 
         for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
-            if (t) % episode_length == 0:
+            if (t) % self.episode_length == 0:
                 current_states = self.reset_fn()
-            if (t + 1) % episode_length == 0:
+            if (t + 1) % self.episode_length == 0:
                 done[:, t] = True
             # Convert current current_states to indices
             current_state_indices = (
