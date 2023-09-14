@@ -75,10 +75,6 @@ class GridWorld:
         current_states = self.reset_fn()
 
         for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
-            if (t) % self.episode_length == 0:
-                current_states = self.reset_fn()
-            if (t + 1) % self.episode_length == 0:
-                done[:, t] = True
             # Convert current current_states to indices
             current_state_indices = (
                 current_states[:, 0] * self.grid_size + current_states[:, 1]
@@ -91,12 +87,16 @@ class GridWorld:
                 .long()
             )
 
-            next_states, R, _, _ = self.step_fn(current_states, A, t)
+            next_states, R, D, _ = self.step_fn(current_states, A, t)
+
+            if D:
+                next_states = self.reset_fn()
 
             # Store the current current_states and rewards
             states[:, t] = current_states
             actions[:, t] = A
             rewards[:, t] = R
+            done[:, t] = D
 
             # Update current current_states
             current_states = next_states
