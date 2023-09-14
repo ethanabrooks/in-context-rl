@@ -46,7 +46,6 @@ def train(
     model_args: dict,
     n_batch: int,
     n_epochs: int,
-    n_steps: int,
     optimizer_config: dict,
     run: Optional[Run],
     run_name: str,
@@ -75,7 +74,7 @@ def train(
     # Set the seed for Python's random module
     random.seed(seed)
 
-    dataset = data.make(data_path, **data_args, n_data=n_steps)
+    dataset = data.make(data_path, **data_args)
 
     print("Create net... ", end="", flush=True)
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
