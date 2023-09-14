@@ -24,6 +24,7 @@ class Data(data.base.Data):
         steps_per_context: int,
         value_iteration_args: dict,
     ):
+        self._include_goal = include_goal
         self.n_data = n_data
         self.steps_per_context = steps_per_context
         episode_length = 1 + grid_size * 2
@@ -100,6 +101,10 @@ class Data(data.base.Data):
         _, _, goal_dim = self.goals.shape
         _, _, obs_dim = self.observations.shape
         return [goal_dim, obs_dim, 1, 1]
+
+    @property
+    def include_goal(self):
+        return self._include_goal
 
     def cat_sequence(self, goals, observations, actions, rewards):
         data = torch.cat(
