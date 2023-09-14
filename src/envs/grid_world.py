@@ -38,11 +38,24 @@ class GridWorld:
         R = is_goal.float()[..., None].tile(1, 1, len(self.deltas))
         self.R = F.pad(R, padding, value=0)  # Insert row for absorbing state
 
+    def check_actions(self, actions: torch.Tensor):
+        B = self.n_tasks
+        A = len(self.deltas)
+        assert [*actions.shape] == [B]
+        assert actions.max() < A
+        assert 0 <= actions.min()
+
     def check_pi(self, Pi: torch.Tensor):
         B = self.n_tasks
         N = self.n_states
         A = len(self.deltas)
         assert [*Pi.shape] == [B, N, A]
+
+    def check_states(self, states: torch.Tensor):
+        B = self.n_tasks
+        assert [*states.shape] == [B, 2]
+        assert states.max() < self.grid_size + 1
+        assert 0 <= states.min()
 
     def get_trajectories(
         self,
@@ -105,6 +118,8 @@ class GridWorld:
         current_states: torch.Tensor,
         actions: torch.Tensor,
     ):
+        self.check_states(current_states)
+        self.check_actions(actions)
         B = self.n_tasks
         # Convert current current_states to indices
         current_state_indices = (
