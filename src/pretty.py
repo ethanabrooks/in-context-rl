@@ -48,3 +48,24 @@ def print_row(
         value_str = f"{value_str:<{col_width(column)}}"
         row_str += f"{value_str}"
     console.print(row_str)
+
+
+def render_graph(*numbers: float, max_num: float, width: int = 10, length: int = 10):
+    if len(numbers) > length:
+        subarrays = np.array_split(numbers, length)
+        # Compute the mean of each subarray
+        numbers = [subarray.mean() for subarray in subarrays]
+    bar_elements = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
+    for num in numbers:
+        assert num <= max_num
+        ratio = num / max_num
+        full_blocks = int(ratio * width)
+        fraction = ratio * width - full_blocks
+        bar = full_blocks * "█"
+        partial_block = round(fraction * (len(bar_elements) - 1))
+        if num < max_num:
+            bar += bar_elements[partial_block]
+        padding = width - len(bar)
+        padding = " " * padding
+        num = round(num, 1)
+        yield f"{num:<4} {bar}{padding}▏"

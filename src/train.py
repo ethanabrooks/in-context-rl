@@ -16,7 +16,7 @@ import wandb
 from evaluate import evaluate, plot
 from models import GPT
 from optimizer import configure, decay_lr
-from pretty import print_row
+from pretty import print_row, render_graph
 
 
 def set_seed(seed: int):
@@ -85,6 +85,8 @@ def train(
 
                 min_return, max_return = dataset.return_range
                 returns = df.groupby("t").mean().returns
+                graph = render_graph(*returns, max_num=max_return)
+                print("\n" + "\n".join(graph), end="\n\n")
                 fig = plot(
                     ymin=min_return,
                     ymax=max_return,
