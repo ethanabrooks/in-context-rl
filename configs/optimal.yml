@@ -3,4 +3,5 @@ data_args:
   include_goal: true
   n_data: 1_000_000
   n_episodes: 2
+  optimal_policy: true
 n_epochs: 20

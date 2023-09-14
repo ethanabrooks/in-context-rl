@@ -19,6 +19,7 @@ class Data(data.base.Data):
         grid_world_args: dict,
         include_goal: bool,
         n_data: int,
+        optimal_policy: bool,
         steps_per_context: int,
         value_iteration_args: dict,
     ):
@@ -43,7 +44,10 @@ class Data(data.base.Data):
                 )
                 yield g, s, a, r, d
 
-        components = zip(*list(collect_data()))
+        data = list(collect_data())
+        if optimal_policy:
+            data = data[-1:]
+        components = zip(*data)
         components = [torch.cat(c, dim=1) for c in components]
         (
             self.goals,

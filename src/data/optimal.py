@@ -18,6 +18,7 @@ class Data(data.full_history.Data):
         include_goal: bool,
         n_data: int,
         n_episodes: int,
+        optimal_policy: bool,
         steps_per_context: int,
         value_iteration_args: dict,
     ):
