@@ -26,7 +26,7 @@ class Data(data.base.Data):
         steps_per_context: int,
         value_iteration_args: dict,
     ):
-        episode_length = 1 + grid_size * 2
+        episode_length = 1 + grid_size**2
         grid_world = ValueIteration(
             episode_length=episode_length,
             **grid_world_args,
