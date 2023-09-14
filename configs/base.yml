@@ -4,6 +4,7 @@ data_args:
     atol: 0.2
     gamma: 0.99
   include_goal: true
+  mask_nonactions: true
   n_data: 100_000
   n_episodes: 1
   optimal_policy: false

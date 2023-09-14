@@ -19,6 +19,7 @@ class Data(data.base.Data):
         grid_size: int,
         grid_world_args: dict,
         include_goal: bool,
+        mask_nonactions: bool,
         n_data: int,
         n_episodes: int,
         optimal_policy: bool,
@@ -76,6 +77,15 @@ class Data(data.base.Data):
             expand_as(~self.done, c).roll(dims=[1], shifts=[1])
             for c in [self.goals, self.observations]
         ] + [torch.ones_like(c) for c in [self.actions, self.rewards]]
+        if mask_nonactions:
+            goals_mask, obs_mask, actions_mask, rewards_mask = masks
+            masks = [
+                torch.zeros_like(goals_mask),
+                torch.zeros_like(obs_mask),
+                actions_mask,
+                torch.zeros_like(rewards_mask),
+            ]
+
         mask = self.cat_sequence(*masks)
         data = self.cat_sequence(*components)
         sequence = self.split_sequence(data)
