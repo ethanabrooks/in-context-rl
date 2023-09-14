@@ -115,16 +115,14 @@ class GridWorld:
 
     def step_fn(
         self,
-        current_states: torch.Tensor,
+        states: torch.Tensor,
         actions: torch.Tensor,
     ):
-        self.check_states(current_states)
+        self.check_states(states)
         self.check_actions(actions)
         B = self.n_tasks
         # Convert current current_states to indices
-        current_state_indices = (
-            current_states[:, 0] * self.grid_size + current_states[:, 1]
-        )
+        current_state_indices = states[:, 0] * self.grid_size + states[:, 1]
 
         rewards = self.R[torch.arange(B), current_state_indices, actions]
 
