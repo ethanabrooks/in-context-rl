@@ -55,9 +55,12 @@ def log(
     if not allow_dirty:
         check_dirty()
 
+    config_name = config
     data_path = get_data_path(config)
     config = get_config(config)
-    run = wandb.init(config=config, name=name, project=get_project_name())
+    run = wandb.init(
+        config=dict(**config, config=config_name), name=name, project=get_project_name()
+    )
     train(**config, data_path=data_path, run=run)
 
 
@@ -88,6 +91,7 @@ def sweep(  # dead: disable
     commit = get_git_rev()
     project_name = get_project_name()
     data_path = get_data_path(config)
+    config_name = config
     config = get_config(config)
     if not allow_dirty:
         check_dirty()
@@ -98,7 +102,7 @@ def sweep(  # dead: disable
         while True:
             try:
                 run = setup_wandb(
-                    config=dict(**config, commit=commit),
+                    config=dict(**config, commit=commit, config=config_name),
                     group=group,
                     project=project_name,
                     rank_zero_only=False,
