@@ -4,7 +4,6 @@ lr: 0.001
 metrics_args:
   steps_per_graph: 1
 model_args:
-  action_weight: 5
   embd_pdrop: 0.1
   layer_args:
     causal_self_attention_args:
@@ -13,9 +12,7 @@ model_args:
     resid_pdrop: 0.1
   n_embd: 32
   n_layer: 4
-  reward_weight: 1
   steps_per_context: 50
-  value_weight: 1
 n_batch: 50
 n_epochs: 20
 n_steps: 1000000

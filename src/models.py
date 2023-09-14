@@ -138,16 +138,13 @@ class TransformerLayer(nn.Module):
 class GPT(nn.Module):
     def __init__(
         self,
-        action_weight: float,
         embd_pdrop: float,
         layer_args: dict,
         n_embd: int,
         n_layer: int,
         n_tokens: int,
-        reward_weight: float,
         step_dim: int,
         steps_per_context: int,
-        value_weight: float,
     ):
         super().__init__()
         context_size = steps_per_context * step_dim - 1
@@ -178,9 +175,6 @@ class GPT(nn.Module):
         self.stop_token = n_tokens * step_dim
         self.context_size = context_size
         self.transition_dim = step_dim
-        self.action_weight = action_weight
-        self.reward_weight = reward_weight
-        self.value_weight = value_weight
 
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
