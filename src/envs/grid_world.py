@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -146,45 +147,43 @@ class GridWorld:
         return next_states, rewards, done, {}
 
     def visualize_policy(self, Pi, task_idx: int = 0):  # dead:disable
-        self.check_pi(Pi)
-        N = self.n_states
-        A = len(self.deltas)
+        N = self.grid_size
+        policy = Pi[task_idx]
+        fig, ax = plt.subplots(figsize=(6, 6))
+        plt.xlim(-1, N)
+        plt.ylim(-1, N)
 
-        # get the grid size
-        grid_size = int(N**0.5)
+        # Draw grid
+        for i in range(N + 1):
+            plt.plot([i, i], [0, N], color="black", linewidth=0.5)
+            plt.plot([0, N], [i, i], color="black", linewidth=0.5)
 
-        # initialize the figure
-        _, ax = plt.subplots()
-
-        # get the policy for the specified task
-        pi = Pi[task_idx].numpy()
-
-        # for each state
-        for n in range(N):
-            # get the policy for state n
-            policy = pi[n]
-
-            # get the x, y coordinates of the state
-            x, y = n % grid_size, n // grid_size
-
-            # for each action
-            for a in range(A):
-                # get the delta for action a
-                dx, dy = self.deltas[a].numpy()
-
-                # plot a line from (x, y) to (x+dx, y+dy) with color and width based on policy[a]
-                color = plt.cm.viridis(policy[a].item())
-                ax.plot(
-                    [x, x + dx * 0.3],
-                    [y, y + dy * 0.3],
-                    color=color,
-                    # lw=policy[a].item() * 10,
+        # Draw policy
+        for i in range(N):
+            for j in range(N):
+                center_x = j + 0.5
+                center_y = N - 1 - i + 0.5
+                if policy[N * i + j, 0] == 1:  # move up
+                    dx, dy = 0, 0.4
+                elif policy[N * i + j, 1] == 1:  # move down
+                    dx, dy = 0, -0.4
+                elif policy[N * i + j, 2] == 1:  # move left
+                    dx, dy = -0.4, 0
+                elif policy[N * i + j, 3] == 1:  # move right
+                    dx, dy = 0.4, 0
+                ax.arrow(
+                    center_x - dx / 2,
+                    center_y - dy / 2,
+                    dx,
+                    dy,
+                    head_width=0.2,
+                    head_length=0.2,
+                    fc="blue",
+                    ec="blue",
                 )
 
-        # set the axis limits and labels
-        ax.set_xlim(-1, grid_size)
-        ax.set_ylim(-1, grid_size)
-        ax.set_xticks(range(grid_size))
-        ax.set_yticks(range(grid_size))
+        plt.gca().set_aspect("equal", adjustable="box")
+        plt.xticks(np.arange(N))
+        plt.yticks(np.arange(N))
         plt.gca().invert_yaxis()
         plt.savefig(f"policy{task_idx}.png")
