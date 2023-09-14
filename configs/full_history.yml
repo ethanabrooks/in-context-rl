@@ -8,6 +8,6 @@ data_args:
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
     n_policies: 1
-test_split: 0.0005
-n_steps: 100_000
 n_epochs: 2
+n_steps: 100_000
+test_split: 0.0005

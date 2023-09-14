@@ -6,9 +6,10 @@ from pathlib import Path
 import tomli
 from dollar_lambda import CommandTree, argument, option
 from git import Repo
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 from ray import tune
 from ray.air.integrations.wandb import setup_wandb
+from rich import print
 
 import wandb
 from param_space import param_space
@@ -17,10 +18,40 @@ from train import train
 tree = CommandTree()
 
 
+def is_alphabetical_order(d, parent_keys=None):
+    """Recursively check if all keys in the dictionary are in alphabetical order
+    and return the keys that are out of order.
+    """
+    if parent_keys is None:
+        parent_keys = []
+    if not isinstance(d, dict):
+        return []
+    keys = list(d.keys())
+    out_of_order_keys = [
+        parent_keys + [k1] for k1, k2 in zip(keys, sorted(keys)) if k1 != k2
+    ]
+    for k, v in d.items():
+        out_of_order_keys.extend(is_alphabetical_order(v, parent_keys + [k]))
+    return out_of_order_keys
+
+
+def check_alphabetical_order(d: DictConfig, name: str):
+    out_of_order_keys = is_alphabetical_order(OmegaConf.to_container(d))
+    if out_of_order_keys:
+        print(f"The following keys are not in alphabetical order in {name}:")
+        for keys in out_of_order_keys:
+            print(".".join(keys))
+        exit(1)
+
+
 def get_config(config_name):
     root = Path("configs")
-    base_config = OmegaConf.load(root / "base.yml")
-    config = OmegaConf.load(root / f"{config_name}.yml")
+    config_path = root / f"{config_name}.yml"
+    config = OmegaConf.load(config_path)
+    check_alphabetical_order(config, str(config_path))
+    base_config_path = root / "base.yml"
+    base_config = OmegaConf.load(base_config_path)
+    check_alphabetical_order(base_config, str(base_config_path))
     merged = OmegaConf.merge(base_config, config)
     resolved = OmegaConf.to_container(merged, resolve=True)
     return resolved

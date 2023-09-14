@@ -1,32 +1,32 @@
 grad_norm_clip: 1.0
-lr: 0.001
-n_batch: 50
-n_epochs: 20
 log_freq: 20
+lr: 0.001
 metrics_args:
   steps_per_graph: 1
 model_args:
+  action_weight: 5
+  embd_pdrop: 0.1
   layer_args:
     causal_self_attention_args:
       attn_pdrop: 0.1
       n_head: 4
     resid_pdrop: 0.1
-  embd_pdrop: 0.1
   n_embd: 32
   n_layer: 4
-  steps_per_context: 50
-  action_weight: 5
   reward_weight: 1
+  steps_per_context: 50
   value_weight: 1
+n_batch: 50
+n_epochs: 20
+n_steps: 1000000
 optimizer_config:
   betas: [0.9, 0.95]
   weight_decay: 0.1
-n_steps: 1000000
 run_name: trial
 save_freq: 400
 seed: 0
-test_split: 0.02
 test_freq: 100
+test_split: 0.02
 weights_args:
   actions: 5
   rewards: 1
