@@ -1,6 +1,6 @@
 import torch
 
-import data.base
+import data.full_history
 from tabular.grid_world import GridWorld
 
 
@@ -10,7 +10,7 @@ def expand_as(x: torch.Tensor, y: torch.Tensor):
     return x.expand_as(y)
 
 
-class Data(data.base.Data):
+class Data(data.full_history.Data):
     def __init__(
         self,
         grid_size: int,
