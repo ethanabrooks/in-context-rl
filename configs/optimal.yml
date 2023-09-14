@@ -5,4 +5,3 @@ data_args:
   n_episodes: 2
   optimal_policy: true
 n_epochs: 20
-test_split: 0.005

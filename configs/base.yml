@@ -34,7 +34,6 @@ run_name: trial
 save_freq: 400
 seed: 0
 test_freq: 100
-test_split: 0.0005
 weights_args:
   actions: 5
   rewards: 1

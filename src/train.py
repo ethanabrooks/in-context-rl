@@ -7,33 +7,15 @@ from typing import Optional
 
 import numpy as np
 import torch
-import torch.nn as nn
 from rich import print
-from torch.utils.data import DataLoader, random_split
-from tqdm import tqdm
+from torch.utils.data import DataLoader
 from wandb.sdk.wandb_run import Run
 
 import data
 import wandb
-from data.base import unwrap
 from models import GPT
 from optimizer import configure, decay_lr
 from pretty import print_row
-
-
-def evaluate(net: nn.Module, test_loader: DataLoader, **kwargs):
-    net.eval()
-    counter = Counter()
-    dataset = unwrap(test_loader.dataset)
-    with torch.no_grad():
-        for sequence, mask in tqdm(test_loader, desc="Evaluating"):
-            logits, loss = net(sequence, mask)
-            log = dataset.get_metrics(
-                logits=logits, mask=mask, sequence=sequence, **kwargs
-            )
-            counter.update(dict(**log, loss=loss.item()))
-    log = {k: (v / len(test_loader)) for k, v in counter.items()}
-    return log
 
 
 def set_seed(seed: int):
@@ -67,7 +49,6 @@ def train(
     run_name: str,
     save_freq: int,
     seed: int,
-    test_split: float,
     test_freq: int,
     weights_args: dict,
 ) -> None:
@@ -85,31 +66,16 @@ def train(
 
     optimizer = configure(lr=lr, module=net, **optimizer_config)
 
-    # Split the dataset into train and test sets
-    test_size = int(test_split * len(dataset))
-    train_size = len(dataset) - test_size
-    print("Splitting data... ", end="", flush=True)
-    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-    print("✓")
-
     counter = Counter()
     n_tokens = 0
     tick = time.time()
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
-        train_loader = DataLoader(train_dataset, batch_size=n_batch, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=n_batch, shuffle=False)
+        train_loader = DataLoader(dataset, batch_size=n_batch, shuffle=True)
         print("Loading train data... ", end="", flush=True)
         for t, (sequence, mask) in enumerate(train_loader):
             step = e * len(train_loader) + t
-
-            # test
-            if t % test_freq == 0:
-                log = evaluate(net=net, test_loader=test_loader, **metrics_args)
-                print_row(log, show_header=True)
-                if run is not None:
-                    wandb.log({f"test/{k}": v for k, v in log.items()}, step=step)
 
             # gradient update
             net.train()

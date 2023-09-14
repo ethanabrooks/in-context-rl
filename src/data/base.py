@@ -47,9 +47,3 @@ class Data(Dataset, ABC):
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
         return self.cat_sequence(**sequence).cuda()
-
-
-def unwrap(dataset: Dataset):
-    if isinstance(dataset, Data):
-        return dataset
-    return unwrap(dataset.dataset)
