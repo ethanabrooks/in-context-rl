@@ -42,42 +42,6 @@ class GridWorld:
         A = len(self.deltas)
         assert [*Pi.shape] == [B, N, A]
 
-    def compute_policy_towards_goal(self):
-        # Expand goals and states for broadcasting
-        expanded_goals = self.goals[:, None, :]
-        expanded_states = self.states[None, :, :]
-
-        # Calculate the difference between each state and the goals
-        diff = expanded_goals - expanded_states
-
-        # Determine the action indices to move toward the goal for each state
-        positive_x_i, positive_x_j = (diff[..., 0] > 0).nonzero(as_tuple=True)
-        negative_x_i, negative_x_j = (diff[..., 0] < 0).nonzero(as_tuple=True)
-        positive_y_i, positive_y_j = (diff[..., 1] > 0).nonzero(as_tuple=True)
-        negative_y_i, negative_y_j = (diff[..., 1] < 0).nonzero(as_tuple=True)
-        equal_i, equal_j = (diff == 0).all(-1).nonzero(as_tuple=True)
-
-        # Initialize the actions tensor
-        absorbing_state_idx = self.n_states - 1
-        actions = torch.zeros(self.goals.size(0), self.n_states, 4)
-
-        # Assign deterministic actions with vertical priority
-        actions[positive_x_i, positive_x_j, 1] = 1  # Move down
-        actions[negative_x_i, negative_x_j, 0] = 1  # Move up
-        # Only assign horizontal actions if no vertical action has been assigned
-        actions[positive_y_i, positive_y_j, 3] = (
-            actions[positive_y_i, positive_y_j].sum(-1) == 0
-        ).float()  # Move right
-        actions[negative_y_i, negative_y_j, 2] = (
-            actions[negative_y_i, negative_y_j].sum(-1) == 0
-        ).float()  # Move left
-        actions[
-            :, absorbing_state_idx, 0
-        ] = 1  # Arbitrary action, since it doesn't matter
-        actions[equal_i, equal_j, 0] = 1  # Arbitrary action, since it doesn't matter
-
-        return actions
-
     def get_trajectories(
         self,
         episode_length: int,
