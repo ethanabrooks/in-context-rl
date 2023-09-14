@@ -74,6 +74,7 @@ class Data(data.base.Data):
         mask = mask.reshape(n_data, -1, self.step_dim)
         _, self.steps_per_row, _ = data.shape
         self.unpadded_data = data
+        self.unpadded_mask = mask
         assert [*self.unpadded_data.shape] == [
             n_data,
             self.steps_per_row,
