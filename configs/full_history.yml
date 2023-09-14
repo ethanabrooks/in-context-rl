@@ -1,5 +1,0 @@
-
-data_args:
-  n_data: 100_000
-  optimal_policy: false
-test_split: 0.0005

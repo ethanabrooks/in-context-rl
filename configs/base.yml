@@ -4,7 +4,9 @@ data_args:
     atol: 0.2
     gamma: 0.99
   include_goal: true
+  n_data: 100_000
   n_episodes: 1
+  optimal_policy: false
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
     n_policies: 1
@@ -32,7 +34,7 @@ run_name: trial
 save_freq: 400
 seed: 0
 test_freq: 100
-test_split: 0.02
+test_split: 0.0005
 weights_args:
   actions: 5
   rewards: 1
