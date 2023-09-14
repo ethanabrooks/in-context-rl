@@ -4,11 +4,18 @@ from functools import lru_cache
 import torch
 from torch.utils.data import Dataset
 
+from envs.base import Env
+
 
 class Data(Dataset, ABC):
     @property
     @abstractmethod
     def include_goal(self) -> bool:
+        pass
+
+    @property
+    @abstractmethod
+    def return_range(self) -> tuple[float, float]:
         pass
 
     @property
@@ -22,8 +29,17 @@ class Data(Dataset, ABC):
         return self.data.max().round().long().item()
 
     @property
+    @abstractmethod
+    def episodes_per_rollout(self):
+        pass
+
+    @property
     def step_dim(self):
         return sum(self._dims)
+
+    @abstractmethod
+    def build_env(self) -> Env:
+        pass
 
     @abstractmethod
     def cat_sequence(self, goals, observations, actions, rewards):

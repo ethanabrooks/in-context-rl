@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 import data.base
+from envs.grid_world_env import Env
 from envs.value_iteration import ValueIteration
 from pretty import console
 
@@ -24,9 +25,6 @@ class Data(data.base.Data):
         steps_per_context: int,
         value_iteration_args: dict,
     ):
-        self._include_goal = include_goal
-        self.n_data = n_data
-        self.steps_per_context = steps_per_context
         episode_length = 1 + grid_size * 2
         grid_world = ValueIteration(
             episode_length=episode_length,
@@ -34,12 +32,22 @@ class Data(data.base.Data):
             grid_size=grid_size,
             n_tasks=n_data,
         )
-        n_rounds = 2 * grid_size - 1
+        self._include_goal = include_goal
+        self.episode_length = grid_world.episode_length
+        self.grid_size = grid_size
+        self.n_data = n_data
+        self.n_episodes = n_episodes
+        self.steps_per_context = steps_per_context
+        self.n_rounds = 2 * grid_size - 1
 
         def collect_data():
             console.log("Value iteration...")
             for t, (V, Pi) in enumerate(
-                (grid_world.value_iteration(**value_iteration_args, n_rounds=n_rounds))
+                (
+                    grid_world.value_iteration(
+                        **value_iteration_args, n_rounds=self.n_rounds
+                    )
+                )
             ):
                 g, s, a, r, d = grid_world.get_trajectories(
                     Pi=Pi, n_episodes=n_episodes
@@ -105,6 +113,17 @@ class Data(data.base.Data):
     @property
     def include_goal(self):
         return self._include_goal
+
+    @property
+    def return_range(self):
+        return 0.0, 1.0
+
+    @property
+    def episodes_per_rollout(self):
+        return self.n_rounds * self.n_episodes
+
+    def build_env(self):
+        return Env(grid_size=self.grid_size, episode_length=self.episode_length)
 
     def cat_sequence(self, goals, observations, actions, rewards):
         data = torch.cat(

@@ -173,11 +173,15 @@ class GPT(nn.Module):
 
         self.vocab_size = n_tokens
         self.stop_token = n_tokens * step_dim
-        self.context_size = context_size
+        self._context_size = context_size
         self.transition_dim = step_dim
 
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
+
+    @property
+    def context_size(self):
+        return self._context_size
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -221,14 +225,16 @@ class GPT(nn.Module):
             assert (x_ == x_pad_).all()
 
     def forward(
-        self, sequence: torch.Tensor, mask: torch.Tensor, weights: torch.Tensor = None
+        self,
+        sequence: torch.Tensor,
+        mask: torch.Tensor = None,
+        weights: torch.Tensor = None,
     ):
         """
         sequence : [ B x (T+1) ]
         """
         inputs = sequence[:, :-1].contiguous()
         targets = sequence[:, 1:].contiguous()
-        mask = mask[:, 1:].contiguous()
 
         b, t = inputs.size()
         assert t <= self.context_size, "Cannot forward, model block size is exhausted."
@@ -269,6 +275,8 @@ class GPT(nn.Module):
             loss = loss.mean()
         else:
             loss = loss * weights[:, 1:].reshape(-1)
-            loss = (loss * mask.view(-1)).mean()
+            if mask is not None:
+                mask = mask[:, 1:].contiguous()
+                loss = (loss * mask.view(-1)).mean()
 
         return logits, loss

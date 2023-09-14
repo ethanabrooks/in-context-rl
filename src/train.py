@@ -13,6 +13,7 @@ from wandb.sdk.wandb_run import Run
 
 import data
 import wandb
+from evaluate import evaluate, plot
 from models import GPT
 from optimizer import configure, decay_lr
 from pretty import print_row
@@ -37,6 +38,7 @@ def set_seed(seed: int):
 def train(
     data_args: dict,
     data_path: Path,
+    evaluate_args: dict,
     grad_norm_clip: float,
     log_freq: int,
     lr: float,
@@ -72,10 +74,31 @@ def train(
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
-        train_loader = DataLoader(dataset, batch_size=n_batch, shuffle=True)
+        loader = DataLoader(dataset, batch_size=n_batch, shuffle=True)
         print("Loading train data... ", end="", flush=True)
-        for t, (sequence, mask) in enumerate(train_loader):
-            step = e * len(train_loader) + t
+        for t, (sequence, mask) in enumerate(loader):
+            step = e * len(loader) + t
+
+            # test
+            if t % test_freq == 0:
+                df = evaluate(dataset=dataset, net=net, **evaluate_args)
+
+                min_return, max_return = dataset.return_range
+                returns = df.groupby("t").mean().returns
+                fig = plot(
+                    ymin=min_return,
+                    ymax=max_return,
+                    df=df,
+                )
+                *_, final_return = returns
+                if run is not None:
+                    wandb.log(
+                        {
+                            "eval/rewards": wandb.Image(fig),
+                            "eval/final return": final_return,
+                        },
+                        step=step,
+                    )
 
             # gradient update
             net.train()
@@ -89,7 +112,7 @@ def train(
             # update learning rate
             n_tokens += mask.sum()
             final_tokens = (
-                n_epochs * len(train_loader) * n_batch * dataset.step_dim
+                n_epochs * len(loader) * n_batch * dataset.step_dim
             )  # number of tokens seen during training
             decayed_lr = decay_lr(lr, final_tokens=final_tokens, n_tokens=n_tokens)
             for param_group in optimizer.param_groups:
