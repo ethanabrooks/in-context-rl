@@ -9,7 +9,7 @@ data_args:
   optimal_policy: false
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
-    n_policies: 1
+    n_policies: ${data_args.n_data}
 grad_norm_clip: 1.0
 log_freq: 20
 lr: 0.001
