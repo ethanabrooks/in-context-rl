@@ -91,7 +91,7 @@ class GridWorld:
                 .long()
             )
 
-            next_states, R, _, _ = self.step_fn(current_states, A)
+            next_states, R, _, _ = self.step_fn(current_states, A, t)
 
             # Store the current current_states and rewards
             states[:, t] = current_states
@@ -117,6 +117,7 @@ class GridWorld:
         self,
         states: torch.Tensor,
         actions: torch.Tensor,
+        t: int,
     ):
         self.check_states(states)
         self.check_actions(actions)
@@ -139,7 +140,10 @@ class GridWorld:
             ),
             dim=1,
         )
-        return next_states, rewards, False, {}
+        done = False
+        if (t + 1) % self.episode_length == 0:
+            done = True
+        return next_states, rewards, done, {}
 
     def visualize_policy(self, Pi, task_idx: int = 0):  # dead:disable
         self.check_pi(Pi)
