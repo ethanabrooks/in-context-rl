@@ -143,7 +143,7 @@ def train(
                 wandb.log(dict(get_figures()), step=step)
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
-                log.update(lr=decayed_lr, time=(time.time() - tick) / log_freq)
+                log.update(epoch=e, lr=decayed_lr, time=(time.time() - tick) / log_freq)
                 counter = Counter()
                 tick = time.time()
                 print_row(dict(step=step, **log), show_header=(t % test_freq == 0))
