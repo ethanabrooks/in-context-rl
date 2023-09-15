@@ -22,7 +22,6 @@ class Data(data.base.Data):
         mask_nonactions: bool,
         n_data: int,
         n_episodes: int,
-        optimal_policy: bool,
         steps_per_context: int,
         value_iteration_args: dict,
     ):
@@ -41,26 +40,7 @@ class Data(data.base.Data):
         self.steps_per_context = steps_per_context
         self.n_rounds = 2 * grid_size - 1
 
-        def collect_data():
-            console.log("Value iteration...")
-            for t, (V, Pi) in enumerate(
-                (
-                    grid_world.value_iteration(
-                        **value_iteration_args, n_rounds=self.n_rounds
-                    )
-                )
-            ):
-                g, s, a, r, d = grid_world.get_trajectories(
-                    Pi=Pi, n_episodes=n_episodes
-                )
-                console.log(
-                    f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."
-                )
-                yield g, s, a, r, d
-
-        data = list(collect_data())
-        if optimal_policy:
-            data = data[-1:]
+        data = list(self.collect_data(grid_world, **value_iteration_args))
         components = zip(*data)
         components = [torch.cat(c, dim=1) for c in components]
         (
@@ -142,6 +122,19 @@ class Data(data.base.Data):
         )
         n_data, _, _ = data.shape
         return data.long().reshape(n_data, -1).contiguous()
+
+    def collect_data(self, grid_world: ValueIteration, **kwargs):
+        console.log("Value iteration...")
+        for t, (V, Pi) in enumerate(
+            (grid_world.value_iteration(**kwargs, n_rounds=self.n_rounds))
+        ):
+            g, s, a, r, d = grid_world.get_trajectories(
+                Pi=Pi, n_episodes=self.n_episodes
+            )
+            console.log(
+                f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."
+            )
+            yield g, s, a, r, d
 
     def index_1d_to_2d(self, index):
         row = index // self.steps_per_row
