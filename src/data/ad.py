@@ -18,6 +18,7 @@ def expand_as(x: torch.Tensor, y: torch.Tensor):
 class Data(data.base.Data):
     def __init__(
         self,
+        alpha: float,
         grid_size: int,
         grid_world_args: dict,
         include_goal: bool,
@@ -29,6 +30,7 @@ class Data(data.base.Data):
     ):
         episode_length = 1 + grid_size**2
         grid_world = ValueIteration(
+            alpha=alpha,
             episode_length=episode_length,
             **grid_world_args,
             grid_size=grid_size,
@@ -40,7 +42,7 @@ class Data(data.base.Data):
         self.n_data = n_data
         self.n_episodes = n_episodes
         self.steps_per_context = steps_per_context
-        self.n_rounds = 2 * grid_size - 1
+        self.n_rounds = round((2 * grid_size - 1) / alpha)
 
         data = list(self.collect_data(grid_world, **value_iteration_args))
         components = zip(*data)

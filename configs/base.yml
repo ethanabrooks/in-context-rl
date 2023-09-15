@@ -1,4 +1,5 @@
 data_args:
+  alpha: 0.5
   grid_size: 3
   grid_world_args:
     atol: 0.2

@@ -8,8 +8,11 @@ from envs.grid_world import GridWorld
 
 
 class ValueIteration(GridWorld):
-    def __init__(self, atol: float = 0.02, gamma: float = 0.99, *args, **kwargs):
+    def __init__(
+        self, alpha: float, atol: float = 0.02, gamma: float = 0.99, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
+        self.alpha = alpha
         self.atol = atol
         self.gamma = gamma
 
@@ -93,9 +96,9 @@ class ValueIteration(GridWorld):
         self.check_pi(Pi)
         self.check_V(V)
         Q = self.R + self.gamma * (self.T * V[:, None, None]).sum(-1)
-        Pi = torch.zeros_like(Pi)
-        Pi.scatter_(-1, Q.argmax(dim=-1, keepdim=True), 1.0)
-        return Pi
+        new_Pi = torch.zeros_like(Pi)
+        new_Pi.scatter_(-1, Q.argmax(dim=-1, keepdim=True), 1.0)
+        return (1 - self.alpha) * Pi + (self.alpha) * new_Pi
 
     def visualize_values(self, V: torch.Tensor, task_idx: int = 0):  # dead: disable
         global_min = V[task_idx].min().item()
