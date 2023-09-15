@@ -21,9 +21,9 @@ def evaluate(dataset: Data, net: GPT, n_rollouts: int, **kwargs):
         for _ in tqdm(range(n_rollouts))
     ]
     records = [
-        dict(i=i, t=t, returns=r)
+        dict(i=i, t=t, name=n, returns=r)
         for i, rollout in enumerate(rollouts)
-        for t, r in enumerate(rollout)
+        for t, (n, r) in enumerate(rollout)
     ]
     return pd.DataFrame(records)
 
@@ -81,11 +81,11 @@ def rollout(
             actual_return = get_return(*rewards, gamma=gamma)
             optimal = info.get("optimal", None)
             if optimal is None:
-                yield actual_return.item()
+                yield "return", actual_return.item()
             else:
                 optimal_return = get_return(*optimal, gamma=gamma)
                 regret = optimal_return - actual_return
-                yield regret.item()
+                yield "regret", regret.item()
             rewards = []
             observation = env.reset().cuda()
 
@@ -95,7 +95,7 @@ def rollout(
         history.extend([action, reward])
 
 
-def plot(ymin: float, ymax: float, df: pd.DataFrame):
+def plot(df: pd.DataFrame, name: str, ymin: float, ymax: float):
     means = df.groupby("t").returns.mean()
     sems = df.groupby("t").returns.sem()
 
@@ -104,6 +104,6 @@ def plot(ymin: float, ymax: float, df: pd.DataFrame):
     ax.plot(means.index, means)
     ax.set_ylim(ymin, ymax)
     ax.set_xlabel("episode")
-    ax.set_ylabel("returns")
+    ax.set_ylabel(name)
     ax.grid(True)
     return fig

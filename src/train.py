@@ -84,20 +84,26 @@ def train(
                 df = evaluate(dataset=dataset, net=net, **evaluate_args)
 
                 min_return, max_return = dataset.return_range
-                returns = df.groupby("t").mean().returns
+                returns = df.drop("name", axis=1).groupby("t").mean().returns
                 graph = render_graph(*returns, max_num=max_return)
                 print("\n" + "\n".join(graph), end="\n\n")
+                try:
+                    [name] = df.name.unique()
+                except ValueError:
+                    raise ValueError("Multiple names in the same rollout")
                 fig = plot(
+                    df=df,
+                    name=name,
                     ymin=min_return,
                     ymax=max_return,
-                    df=df,
                 )
                 *_, final_return = returns
+
                 if run is not None:
                     wandb.log(
                         {
-                            "eval/rewards": wandb.Image(fig),
-                            "eval/final return": final_return,
+                            f"eval/{name}": wandb.Image(fig),
+                            f"eval/final {name}": final_return,
                         },
                         step=step,
                     )
