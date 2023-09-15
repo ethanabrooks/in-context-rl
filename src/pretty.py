@@ -40,7 +40,7 @@ def print_row(
         format = formats.get(column)
         if format is None:
             if isinstance(value, float):
-                format = lambda x: f"{x:.3f}"
+                format = lambda x: "{:.{n}g}".format(x, n=3)
             else:
                 format = str
         value_str = format(value)
