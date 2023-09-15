@@ -128,8 +128,18 @@ def sweep(  # dead: disable
         check_dirty()
 
     def trainable(sweep_params):
+        for k, v in sweep_params.items():
+            *path, key = k.split("/")
+            subconfig = config
+
+            for name in path:
+                subconfig = subconfig[name]
+            if key not in subconfig:
+                print(config)
+                raise ValueError(f"Failed to index into config with path {k}")
+            subconfig[key] = v
+
         sleep_time = 1
-        config.update(**sweep_params)
         while True:
             try:
                 run = setup_wandb(
