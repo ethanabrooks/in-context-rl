@@ -15,6 +15,7 @@ evaluate_args:
   n_rollouts: 10
 grad_norm_clip: 1.0
 log_freq: 20
+log_tables_freq: 100
 lr: 0.001
 metrics_args: {}
 model_args:

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import torch
 import torch.nn.functional as F
 
@@ -183,6 +185,7 @@ class Data(data.base.Data):
             total_accuracy = (pred == tgt)[mask.bool()]
             acc[f"(total) {name} accuracy"] = total_accuracy
 
+        table = defaultdict(list)
         for i in range(seq_len):
             for (name, pred), (name2, tgt), (name3, mask) in iterator:
                 assert name == name2 == name3
@@ -201,7 +204,7 @@ class Data(data.base.Data):
                 mask_chunk = get_chunk(mask)
                 if mask_chunk.sum() > 0:
                     accuracy = (pred_chunk == tgt_chunk)[mask_chunk.bool()]
-                    acc[f"({i}) {name} accuracy"] = accuracy
+                    table[f"{name} accuracy"].append(accuracy.float().mean().item())
 
         log = {k: v.float().mean().item() for k, v in acc.items()}
-        return log
+        return log, table

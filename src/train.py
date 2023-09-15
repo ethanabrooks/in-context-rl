@@ -13,7 +13,8 @@ from wandb.sdk.wandb_run import Run
 
 import data
 import wandb
-from evaluate import evaluate, plot
+from data.base import plot_accuracy
+from evaluate import evaluate, plot_returns
 from models import GPT
 from optimizer import configure, decay_lr
 from pretty import print_row, render_graph
@@ -41,6 +42,7 @@ def train(
     evaluate_args: dict,
     grad_norm_clip: float,
     log_freq: int,
+    log_tables_freq: int,
     lr: float,
     metrics_args: dict,
     model_args: dict,
@@ -91,7 +93,7 @@ def train(
                     [name] = df.name.unique()
                 except ValueError:
                     raise ValueError("Multiple names in the same rollout")
-                fig = plot(
+                fig = plot_returns(
                     df=df,
                     name=name,
                     ymin=min_return,
@@ -127,10 +129,18 @@ def train(
                 param_group.update(lr=decayed_lr)
 
             # log
-            log = dataset.get_metrics(
+            log, tables = dataset.get_metrics(
                 logits=logits, mask=mask, sequence=sequence, **metrics_args
             )
             counter.update(dict(**log, loss=loss.item()))
+            if t % log_tables_freq == 0 and run is not None:
+
+                def get_figures():
+                    for name, xs in tables.items():
+                        fig = plot_accuracy(*xs, name=name, ymin=0, ymax=1)
+                        yield f"train/{name}", wandb.Image(fig)
+
+                wandb.log(dict(get_figures()), step=step)
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
                 log.update(lr=decayed_lr, time=(time.time() - tick) / log_freq)

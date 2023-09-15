@@ -95,7 +95,7 @@ def rollout(
         history.extend([action, reward])
 
 
-def plot(df: pd.DataFrame, name: str, ymin: float, ymax: float):
+def plot_returns(df: pd.DataFrame, name: str, ymin: float, ymax: float):
     means = df.groupby("t").returns.mean()
     sems = df.groupby("t").returns.sem()
 
