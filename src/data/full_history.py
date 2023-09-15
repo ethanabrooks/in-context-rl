@@ -156,7 +156,6 @@ class Data(data.base.Data):
         logits: torch.Tensor,
         mask: torch.Tensor,
         sequence: torch.Tensor,
-        steps_per_graph: int,
     ):
         n_batch, seq_len = sequence.shape
         n_batch2, seq_len2, _ = logits.shape
@@ -188,25 +187,21 @@ class Data(data.base.Data):
             for (name, pred), (name2, tgt), (name3, mask) in iterator:
                 assert name == name2 == name3
                 _, component_seq_len, *_ = pred[mask].shape
-                graphs_per_component = component_seq_len // steps_per_graph
 
-                if i >= graphs_per_component:
+                if i >= component_seq_len:
                     continue
 
-                def get_chunk(x, start, end):
+                def get_chunk(x):
                     if x.ndim == 2:
                         x = x[..., None]
-                    return x[:, start:end]
+                    return x[:, i : i + 1]
 
-                start = i * steps_per_graph
-                end = (i + 1) * steps_per_graph
-
-                pred_chunk = get_chunk(pred, start, end)
-                tgt_chunk = get_chunk(tgt, start, end)
-                mask_chunk = get_chunk(mask, start, end)
+                pred_chunk = get_chunk(pred)
+                tgt_chunk = get_chunk(tgt)
+                mask_chunk = get_chunk(mask)
                 if mask_chunk.sum() > 0:
-                    acc[f"({i}) {name} accuracy"] = (pred_chunk == tgt_chunk)[
-                        mask_chunk.bool()
-                    ]
+                    accuracy = (pred_chunk == tgt_chunk)[mask_chunk.bool()]
+                    acc[f"({i}) {name} accuracy"] = accuracy
 
-        return {k: v.float().mean().item() for k, v in acc.items()}
+        log = {k: v.float().mean().item() for k, v in acc.items()}
+        return log

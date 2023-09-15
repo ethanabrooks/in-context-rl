@@ -16,8 +16,7 @@ evaluate_args:
 grad_norm_clip: 1.0
 log_freq: 20
 lr: 0.001
-metrics_args:
-  steps_per_graph: 1
+metrics_args: {}
 model_args:
   embd_pdrop: 0.1
   layer_args:
