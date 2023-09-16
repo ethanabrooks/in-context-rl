@@ -1,4 +1,5 @@
 from itertools import islice
+import gym
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,18 +36,36 @@ def get_return(*rewards: float, gamma: float):
     return actual_return
 
 
+def get_dim(space: gym.Space) -> int:
+    if isinstance(space, gym.spaces.Discrete):
+        return 1
+    elif isinstance(space, gym.spaces.MultiDiscrete):
+        return space.nvec.size
+    else:
+        raise NotImplementedError
+
+
 def rollout(
     dataset: Data,
     gamma: float,
     net: GPT,
 ):
     env = dataset.build_env()
+
+    # task
     task = env.get_task().cuda()
+    assert [*task.shape] == [2]
     if not dataset.include_goal:
         task = torch.zeros_like(task)
-    observation = env.reset().cuda()
+    task_dim = get_dim(env.task_space)
+    assert [*task.shape] == [task_dim]
 
-    action_dim = 1
+    # observation
+    observation = env.reset().cuda()
+    observation_dim = get_dim(env.observation_space)
+    assert [*observation.shape] == [observation_dim]
+
+    action_dim = get_dim(env.action_space)
     act_card = env.action_space.n
 
     history = []
@@ -63,6 +82,7 @@ def rollout(
         ctx = ctx[None].cuda()
 
         [logits], _ = net.forward(ctx)
+        assert [*logits.shape] == [net.context_size, dataset.n_tokens + 1]
 
         # zero out invalid actions
         logits = logits[:-1]  # exclude reward prediction
@@ -73,9 +93,14 @@ def rollout(
         # sample action
         logits = torch.cat([valid, invalid], dim=-1)
         probs = logits.softmax(dim=-1)
+        assert [*probs.shape] == [1, dataset.n_tokens + 1]
         [action] = torch.multinomial(probs, num_samples=1).T
 
         observation, reward, done, info = env.step(action.cpu())
+        assert [*observation.shape] == [observation_dim]
+        assert [*reward.shape] == []
+        assert isinstance(done, bool)
+        assert isinstance(info, dict)
         rewards.append(reward)
         if done:
             actual_return = get_return(*rewards, gamma=gamma)

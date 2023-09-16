@@ -22,6 +22,10 @@ class Env(GridWorld, Env):
     def observation_space(self):  # dead: disable
         return MultiDiscrete([self.grid_size, self.grid_size])
 
+    @property
+    def task_space(self):  # dead: disable
+        return MultiDiscrete([self.grid_size, self.grid_size])
+
     def get_task(self):
         [goal] = self.goals
         return goal
