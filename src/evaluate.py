@@ -65,24 +65,43 @@ def rollout(
     observation_dim = get_dim(env.observation_space)
     assert [*observation.shape] == [observation_dim]
 
+    # actions
     action_dim = get_dim(env.action_space)
     act_card = env.action_space.n
+    dummy_action = torch.tensor(dataset.pad_value).cuda()
 
-    history = []
+    # reward
+    dummy_reward = torch.tensor(dataset.pad_value).cuda()
+
+    tasks = []
+    observations = []
+    actions = []
     rewards = []
+    episode_rewards = []
+    t = 0
 
     while True:
-        history.extend([task, observation])
+        t += 1
+        tasks.append(task.cuda())
+        observations.append(observation.cuda())
+
+        # create sequence
+        sequence = [
+            tasks,
+            observations,
+            [*actions, dummy_action],
+            [*rewards, dummy_reward],
+        ]
+        sequence = [torch.stack(x, dim=0)[None] for x in sequence]
+
         ## create context and pad
-        ctx = torch.cat(history)
-        pad_value = dataset.pad_value
-        ctx = F.pad(ctx, (0, 1 + action_dim), value=pad_value)  # add dummy action
+        ctx = dataset.cat_sequence(*sequence)
+        assert [*ctx.shape] == [1, t * dataset.step_dim]
         pad_size = 1 + net.context_size - ctx.numel()
-        ctx = F.pad(ctx, (pad_size, 0), value=pad_value)
-        ctx = ctx[None].cuda()
+        ctx = F.pad(ctx, (pad_size, 0), value=dataset.pad_value)
 
         [logits], _ = net.forward(ctx)
-        assert [*logits.shape] == [net.context_size, dataset.n_tokens + 1]
+        assert [*logits.shape] == [net.context_size, 1 + dataset.n_tokens]
 
         # zero out invalid actions
         logits = logits[:-1]  # exclude reward prediction
@@ -94,16 +113,18 @@ def rollout(
         logits = torch.cat([valid, invalid], dim=-1)
         probs = logits.softmax(dim=-1)
         assert [*probs.shape] == [1, dataset.n_tokens + 1]
-        [action] = torch.multinomial(probs, num_samples=1).T
+        [[action]] = torch.multinomial(probs, num_samples=1).T
 
         observation, reward, done, info = env.step(action.cpu())
         assert [*observation.shape] == [observation_dim]
         assert [*reward.shape] == []
         assert isinstance(done, bool)
         assert isinstance(info, dict)
-        rewards.append(reward)
+        actions.append(action.cuda())
+        rewards.append(reward.cuda())
+        episode_rewards.append(reward)
         if done:
-            actual_return = get_return(*rewards, gamma=gamma)
+            actual_return = get_return(*episode_rewards, gamma=gamma)
             optimal = info.get("optimal", None)
             if optimal is None:
                 yield "return", actual_return.item()
@@ -111,13 +132,8 @@ def rollout(
                 optimal_return = get_return(*optimal, gamma=gamma)
                 regret = optimal_return - actual_return
                 yield "regret", regret.item()
-            rewards = []
-            observation = env.reset().cuda()
-
-        # extend history
-        observation = observation.cuda()
-        reward = reward[None].long().cuda()  # TODO! remove long
-        history.extend([action, reward])
+            episode_rewards = []
+            observation = env.reset()
 
 
 def plot_returns(df: pd.DataFrame, name: str, ymin: float, ymax: float):
