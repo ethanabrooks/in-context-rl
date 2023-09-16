@@ -27,12 +27,14 @@ class Data(data.base.Data):
         n_episodes: int,
         steps_per_context: int,
         value_iteration_args: dict,
+        yield_every: int,
     ):
         self.grid_size = grid_size
         self.n_data = n_data
         self.n_episodes = n_episodes
         self.steps_per_context = steps_per_context
         self.n_rounds = round((2 * grid_size - 1) / alpha)
+        self.yield_every = yield_every
 
         grid_world = ValueIteration(
             alpha=alpha,
@@ -142,7 +144,8 @@ class Data(data.base.Data):
             console.log(
                 f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."
             )
-            yield g, s, a, r, d
+            if t % self.yield_every == 0:
+                yield g, s, a, r, d
 
     def index_1d_to_2d(self, index):
         row = index // self.steps_per_row

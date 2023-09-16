@@ -10,6 +10,7 @@ data_args:
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
     n_policies: ${data_args.n_data}
+  yield_every: 1
 data_path: data/ad
 evaluate_args:
   dummy_vec_env: false
