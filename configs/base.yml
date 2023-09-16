@@ -18,7 +18,7 @@ evaluate_args:
   n_rollouts: 10
 grad_norm_clip: 1.0
 log_freq: 20
-log_tables_freq: 100
+log_tables_freq: 5
 lr: 0.001
 metrics_args: {}
 model_args:
@@ -39,7 +39,7 @@ optimizer_config:
 run_name: trial
 save_freq: 400
 seed: 0
-test_freq: 100
+test_freq: 5
 weights_args:
   actions: 5
   rewards: 1

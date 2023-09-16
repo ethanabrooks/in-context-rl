@@ -7,38 +7,42 @@ from rich.console import Console
 console = Console()
 
 
-def print_row(
-    row: dict[str, Any],
-    show_header: bool = True,
-    formats: Optional[dict[str, Callable[[Any], str]]] = None,
-):
-    row = dict(list(row.items())[:10])
-    if formats is None:
-        formats = {}
+class Table:
+    def __init__(
+        self,
+        formats: Optional[dict[str, Callable[[Any], str]]] = None,
+    ):
+        self.formats = {} if formats is None else formats
+        self.term_size = shutil.get_terminal_size((80, 20))
+        self.width = None
 
-    term_size = shutil.get_terminal_size((80, 20))
+    @property
+    def col_width(self) -> int:
+        assert self.width is not None
+        return int(np.round(self.width * self.term_size.columns))
 
-    width = 1 / (len(row))
-
-    def col_width(col: str):
-        return int(np.round(width * term_size.columns))
-
-    if show_header:
-        header = [f"{k[:col_width(k) - 2]:<{col_width(k)}}" for k in row]
+    def print_header(self, row: dict[str, Any]):
+        self.width = 1 / (len(row))
+        header = [f"{k[:self.col_width - 2]:<{self.col_width}}" for k in row]
         console.print("".join(header), style="underline")
-    row_str = ""
-    for column, value in row.items():
-        format = formats.get(column)
-        if format is None:
-            if isinstance(value, float):
-                format = lambda x: "{:.{n}g}".format(x, n=3)
-            else:
-                format = str
-        value_str = format(value)
-        # Set the width of each column to 10 characters
-        value_str = f"{value_str:<{col_width(column)}}"
-        row_str += f"{value_str}"
-    console.print(row_str)
+
+    def print_row(self, row: dict[str, Any]):
+        row = dict(list(row.items())[:10])
+        formats = self.formats
+
+        row_str = ""
+        for column, value in row.items():
+            format = formats.get(column)
+            if format is None:
+                if isinstance(value, float):
+                    format = lambda x: "{:.{n}g}".format(x, n=3)
+                else:
+                    format = str
+            value_str = format(value)
+            # Set the width of each column to 10 characters
+            value_str = f"{value_str:<{self.col_width}}"
+            row_str += f"{value_str}"
+        console.print(row_str)
 
 
 def render_graph(*numbers: float, max_num: float, width: int = 10, length: int = 10):

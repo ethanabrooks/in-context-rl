@@ -18,7 +18,7 @@ from evaluators.ad import evaluate
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy, plot_returns
-from pretty import print_row, render_graph
+from pretty import Table, render_graph
 
 
 def set_seed(seed: int):
@@ -73,7 +73,9 @@ def train(
 
     counter = Counter()
     n_tokens = 0
+    eval_log = None
     tick = time.time()
+    log_table = Table()
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
@@ -81,37 +83,6 @@ def train(
         print("Loading train data... ", end="", flush=True)
         for t, (sequence, mask) in enumerate(loader):
             step = e * len(loader) + t
-
-            # test
-            if t % test_freq == 0:
-                df = pd.DataFrame.from_records(
-                    list(evaluate(dataset=dataset, net=net, **evaluate_args))
-                )
-
-                min_return, max_return = dataset.return_range
-                metrics = df.drop("name", axis=1).groupby("t").mean().metric
-                graph = render_graph(*metrics, max_num=max_return)
-                print("\n" + "\n".join(graph), end="\n\n")
-                try:
-                    [name] = df.name.unique()
-                except ValueError:
-                    raise ValueError("Multiple names in the same rollout")
-                fig = plot_returns(
-                    df=df,
-                    name=name,
-                    ymin=min_return,
-                    ymax=max_return,
-                )
-                *_, final_return = metrics
-
-                if run is not None:
-                    wandb.log(
-                        {
-                            f"eval/{name}": wandb.Image(fig),
-                            f"eval/final {name}": final_return,
-                        },
-                        step=step,
-                    )
 
             # gradient update
             net.train()
@@ -136,22 +107,55 @@ def train(
                 logits=logits, mask=mask, sequence=sequence, **metrics_args
             )
             counter.update(dict(**log, loss=loss.item()))
-            if t % log_tables_freq == 0 and run is not None:
-
-                def get_figures():
-                    for name, xs in tables.items():
-                        fig = plot_accuracy(*xs, name=name, ymin=0, ymax=1)
-                        yield f"train/{name}", wandb.Image(fig)
-
-                wandb.log(dict(get_figures()), step=step)
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
                 log.update(epoch=e, lr=decayed_lr, time=(time.time() - tick) / log_freq)
                 counter = Counter()
                 tick = time.time()
-                print_row(dict(step=step, **log), show_header=(t % test_freq == 0))
+                row = dict(step=step, **log)
+                log = {f"train/{k}": v for k, v in log.items()}
+
+                # test
+                log_t = t // log_freq
+                if log_t % test_freq == 0:
+                    df = pd.DataFrame.from_records(
+                        list(evaluate(dataset=dataset, net=net, **evaluate_args))
+                    )
+
+                    min_return, max_return = dataset.return_range
+                    metrics = df.drop("name", axis=1).groupby("t").mean().metric
+                    graph = render_graph(*metrics, max_num=max_return)
+                    print("\n" + "\n".join(graph), end="\n\n")
+                    try:
+                        [name] = df.name.unique()
+                    except ValueError:
+                        raise ValueError("Multiple names in the same rollout")
+                    fig = plot_returns(
+                        df=df,
+                        name=name,
+                        ymin=min_return,
+                        ymax=max_return,
+                    )
+                    *_, final_metric = metrics
+                    log.update({f"eval/{name}": wandb.Image(fig)})
+                    eval_log = {f"eval/final {name}": final_metric}
+                    log_table.print_header(row)
+
+                if eval_log is not None:
+                    log.update(eval_log)
+
+                if log_t % log_tables_freq == 0:
+
+                    def get_figures():
+                        for name, xs in tables.items():
+                            fig = plot_accuracy(*xs, name=name, ymin=0, ymax=1)
+                            yield f"train/{name}", wandb.Image(fig)
+
+                    log.update(dict(get_figures()))
+
                 if run is not None:
-                    wandb.log({f"train/{k}": v for k, v in log.items()}, step=step)
+                    wandb.log(log, step=step)
+                log_table.print_row(row)
 
             # save
             if t % save_freq == 0:
