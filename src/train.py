@@ -65,6 +65,8 @@ def train(
         loader = DataLoader(dataset, batch_size=n_batch, shuffle=True)
         print("Loading train data... ", end="", flush=True)
         for t, (sequence, mask) in enumerate(loader):
+            sequence = sequence.cuda()
+            mask = mask.cuda()
             step = e * len(loader) + t
 
             # gradient update

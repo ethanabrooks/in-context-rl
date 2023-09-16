@@ -87,8 +87,8 @@ class Data(data.base.Data):
             self.step_dim,
         ]
         pad_value = self.unpadded_data.max().item() + 1
-        self.data = F.pad(data, (0, 0, steps_per_context, 0), value=pad_value).cuda()
-        self.mask = F.pad(mask, (0, 0, steps_per_context, 0), value=0).cuda()
+        self.data = F.pad(data, (0, 0, steps_per_context, 0), value=pad_value)
+        self.mask = F.pad(mask, (0, 0, steps_per_context, 0), value=0)
 
     def __getitem__(self, idx):
         i, j = self.index_1d_to_2d(idx)
