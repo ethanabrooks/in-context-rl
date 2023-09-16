@@ -44,7 +44,6 @@ class Data(data.base.Data):
             n_tasks=n_data,
         )
         self._include_goal = include_goal
-        self._episode_length = grid_world.episode_length
 
         data = list(self.collect_data(grid_world, **value_iteration_args))
         components = zip(*data)
@@ -82,7 +81,6 @@ class Data(data.base.Data):
         mask = mask.reshape(n_data, -1, self.step_dim)
         _, self.steps_per_row, _ = data.shape
         self.unpadded_data = data
-        self.unpadded_mask = mask
         assert [*self.unpadded_data.shape] == [
             n_data,
             self.steps_per_row,

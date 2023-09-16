@@ -88,7 +88,7 @@ def log(
 
 
 @tree.command(parsers=parsers)
-def no_log(config, dummy_vec_env: bool = False):  # dead: disable
+def no_log(config, dummy_vec_env: bool = False):
     config = get_config(config)
     config["evaluate_args"].update(dummy_vec_env=dummy_vec_env)
     return train(**config, run=None)
@@ -103,7 +103,7 @@ def get_git_rev():
 
 
 @tree.subcommand(parsers=parsers)
-def sweep(  # dead: disable
+def sweep(
     config: str,
     gpus_per_proc: int,
     group: str = None,

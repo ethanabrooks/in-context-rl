@@ -89,7 +89,6 @@ class SubprocVecEnv:
         self.closed = False
         self.remotes: list[Connection]
         self.remotes, self.ps = self.start_processes(env_fns)
-        self.viewer = None
 
     def _assert_not_closed(self):
         assert (
@@ -158,9 +157,8 @@ class SubprocVecEnv:
             for (work_remote, remote, env_fn) in zip(work_remotes, remotes, env_fns)
         ]
         for p in ps:
-            p.daemon = (
-                True  # if the main process crashes, we should not cause things to hang
-            )
+            # if the main process crashes, we should not cause things to hang
+            p.daemon = True
             p.start()
         for remote in work_remotes:
             remote.close()

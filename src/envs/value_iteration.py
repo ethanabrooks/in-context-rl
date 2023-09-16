@@ -100,7 +100,7 @@ class ValueIteration(GridWorld):
         new_Pi.scatter_(-1, Q.argmax(dim=-1, keepdim=True), 1.0)
         return (1 - self.alpha) * Pi + (self.alpha) * new_Pi
 
-    def visualize_values(self, V: torch.Tensor, task_idx: int = 0):  # dead: disable
+    def visualize_values(self, V: torch.Tensor, task_idx: int = 0):
         global_min = V[task_idx].min().item()
         global_max = V[task_idx].max().item()
 

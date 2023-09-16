@@ -12,7 +12,6 @@ class Env(GridWorld, Env):
         super().__init__(*args, n_tasks=1, **kwargs)
         self.t = None
         self.current_state = None
-        self.initial_state = None
 
     @property
     def action_space(self):

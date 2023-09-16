@@ -52,7 +52,7 @@ class Data(Dataset, ABC):
 
     @abstractmethod
     def get_metrics(
-        self, logits: torch.Tensor, graphs_per_component: int, sequence: torch.Tensor
+        self, logits: torch.Tensor, sequence: torch.Tensor
     ) -> tuple[dict[str, float], dict[str, list[float]]]:
         pass
 

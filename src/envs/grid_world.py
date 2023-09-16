@@ -191,7 +191,7 @@ class GridWorld:
             done = True
         return next_states, rewards, done, {}
 
-    def visualize_policy(self, Pi, task_idx: int = 0):  # dead:disable
+    def visualize_policy(self, Pi, task_idx: int = 0):
         N = self.grid_size
         policy = Pi[task_idx]
         fig, ax = plt.subplots(figsize=(6, 6))
