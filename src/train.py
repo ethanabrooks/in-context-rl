@@ -14,7 +14,7 @@ from wandb.sdk.wandb_run import Run
 
 import data
 import wandb
-from evaluate import evaluate
+from evaluators.ad import evaluate
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy, plot_returns
