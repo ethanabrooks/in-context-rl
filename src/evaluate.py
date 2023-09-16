@@ -1,6 +1,4 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn.functional as F
 from gym.spaces import Discrete, MultiDiscrete, Space
@@ -145,17 +143,3 @@ def rollout(
                 episode_count[n] += 1
                 episode_t[n] = 0
                 observation[n] = envs.reset(n)
-
-
-def plot_returns(df: pd.DataFrame, name: str, ymin: float, ymax: float):
-    means = df.groupby("t").metric.mean()
-    sems = df.groupby("t").metric.sem()
-
-    fig, ax = plt.subplots()
-    ax.fill_between(means.index, means - sems, means + sems, alpha=0.2)
-    ax.plot(means.index, means)
-    ax.set_ylim(ymin, ymax)
-    ax.set_xlabel("episode")
-    ax.set_ylabel(name)
-    ax.grid(True)
-    return fig

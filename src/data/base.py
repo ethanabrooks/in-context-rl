@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 
 import torch
-from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 
 from envs.base import Env
@@ -69,19 +68,3 @@ class Data(Dataset, ABC):
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
         return self.cat_sequence(**sequence).cuda()
-
-
-def plot_accuracy(
-    *accuracies: float,
-    name: str,
-    ymin: float,
-    ymax: float,
-):
-    fig, ax = plt.subplots()
-    x = list(range(len(accuracies)))
-    ax.bar(x, accuracies)
-    ax.set_ylim(ymin, ymax)
-    ax.set_xlabel("context step")
-    ax.set_ylabel(f"{name} accuracy")
-    ax.grid(True)
-    return fig
