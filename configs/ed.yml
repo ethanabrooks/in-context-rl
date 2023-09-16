@@ -1,6 +1,0 @@
-data_args:
-  include_goal: true
-  n_data: 10_000
-  n_episodes: 2
-data_path: data/ed
-n_epochs: 20
