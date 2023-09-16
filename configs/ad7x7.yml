@@ -1,0 +1,3 @@
+data_args:
+  grid_size: 7
+data_path: data/ad
