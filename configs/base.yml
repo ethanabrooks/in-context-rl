@@ -10,6 +10,7 @@ data_args:
   steps_per_context: ${model_args.steps_per_context}
   value_iteration_args:
     n_policies: ${data_args.n_data}
+data_path: data/ad
 evaluate_args:
   dummy_vec_env: false
   gamma: ${data_args.grid_world_args.gamma}
