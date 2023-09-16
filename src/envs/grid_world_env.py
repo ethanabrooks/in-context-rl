@@ -19,11 +19,11 @@ class Env(GridWorld, Env):
         return Discrete(len(self.deltas))
 
     @property
-    def observation_space(self):  # dead: disable
+    def observation_space(self):
         return MultiDiscrete([self.grid_size, self.grid_size])
 
     @property
-    def task_space(self):  # dead: disable
+    def task_space(self):
         return MultiDiscrete([self.grid_size, self.grid_size])
 
     def get_task(self):

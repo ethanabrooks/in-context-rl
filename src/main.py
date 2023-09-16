@@ -57,13 +57,6 @@ def get_config(config_name):
     return resolved
 
 
-def get_data_path(name):
-    path = Path("src", "data") / name
-    path = path.with_suffix(".py")
-    assert path.exists()
-    return path
-
-
 def get_project_name():
     with open("pyproject.toml", "rb") as f:
         pyproject = tomli.load(f)
@@ -87,17 +80,16 @@ def log(
         check_dirty()
 
     config_name = config
-    data_path = get_data_path(config)
     config = get_config(config)
     run = wandb.init(
         config=dict(**config, config=config_name), name=name, project=get_project_name()
     )
-    train(**config, data_path=data_path, run=run)
+    train(**config, run=run)
 
 
 @tree.command(parsers=parsers)
 def no_log(config):  # dead: disable
-    return train(**get_config(config), data_path=get_data_path(config), run=None)
+    return train(**get_config(config), run=None)
 
 
 def get_git_rev():
@@ -121,7 +113,6 @@ def sweep(  # dead: disable
         group = datetime.datetime.now().strftime("-%d-%m-%H:%M:%S")
     commit = get_git_rev()
     project_name = get_project_name()
-    data_path = get_data_path(config)
     config_name = config
     config = get_config(config)
     if not allow_dirty:
@@ -157,7 +148,7 @@ def sweep(  # dead: disable
         print(
             f"wandb: ️👪 View group at {run.get_project_url()}/groups/{urllib.parse.quote(group)}/workspace"
         )
-        config.update(run=run, data_path=data_path)
+        config.update(run=run)
         return train(**config)
 
     tune.Tuner(

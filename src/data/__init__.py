@@ -1,13 +1,13 @@
 import importlib
 from pathlib import Path
+from typing import Union
 
 from data.base import Data
 
 
-def make(path: Path, *args, **kwargs) -> Data:
-    src, *directories, _ = path.parts  # remove the file extension
-    del src
+def make(path: Union[str, Path], *args, **kwargs) -> Data:
+    path = Path(path)
     name = path.stem
-    name = ".".join([*directories, name])
+    name = ".".join(path.parts)
     module = importlib.import_module(name)
     return module.Data(*args, **kwargs)
