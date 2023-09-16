@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 import torch
 from rich import print
 from torch.utils.data import DataLoader
@@ -83,11 +84,13 @@ def train(
 
             # test
             if t % test_freq == 0:
-                df = evaluate(dataset=dataset, net=net, **evaluate_args)
+                df = pd.DataFrame.from_records(
+                    list(evaluate(dataset=dataset, net=net, **evaluate_args))
+                )
 
                 min_return, max_return = dataset.return_range
-                returns = df.drop("name", axis=1).groupby("t").mean().returns
-                graph = render_graph(*returns, max_num=max_return)
+                metrics = df.drop("name", axis=1).groupby("t").mean().metric
+                graph = render_graph(*metrics, max_num=max_return)
                 print("\n" + "\n".join(graph), end="\n\n")
                 try:
                     [name] = df.name.unique()
@@ -99,7 +102,7 @@ def train(
                     ymin=min_return,
                     ymax=max_return,
                 )
-                *_, final_return = returns
+                *_, final_return = metrics
 
                 if run is not None:
                     wandb.log(

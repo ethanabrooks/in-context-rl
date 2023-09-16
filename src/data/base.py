@@ -11,6 +11,11 @@ from envs.base import Env
 class Data(Dataset, ABC):
     @property
     @abstractmethod
+    def episode_length(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
     def include_goal(self) -> bool:
         pass
 
@@ -43,7 +48,7 @@ class Data(Dataset, ABC):
         pass
 
     @abstractmethod
-    def cat_sequence(self, goals, observations, actions, rewards):
+    def cat_sequence(self, goals, observations, actions, rewards) -> torch.Tensor:
         pass
 
     @abstractmethod

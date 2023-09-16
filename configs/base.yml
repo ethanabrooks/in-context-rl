@@ -11,6 +11,7 @@ data_args:
   value_iteration_args:
     n_policies: ${data_args.n_data}
 evaluate_args:
+  dummy_vec_env: false
   gamma: ${data_args.grid_world_args.gamma}
   n_rollouts: 10
 grad_norm_clip: 1.0

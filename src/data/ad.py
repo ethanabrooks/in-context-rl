@@ -28,21 +28,21 @@ class Data(data.base.Data):
         steps_per_context: int,
         value_iteration_args: dict,
     ):
-        episode_length = 1 + grid_size**2
-        grid_world = ValueIteration(
-            alpha=alpha,
-            episode_length=episode_length,
-            **grid_world_args,
-            grid_size=grid_size,
-            n_tasks=n_data,
-        )
-        self._include_goal = include_goal
-        self.episode_length = grid_world.episode_length
         self.grid_size = grid_size
         self.n_data = n_data
         self.n_episodes = n_episodes
         self.steps_per_context = steps_per_context
         self.n_rounds = round((2 * grid_size - 1) / alpha)
+
+        grid_world = ValueIteration(
+            alpha=alpha,
+            episode_length=self.episode_length,
+            **grid_world_args,
+            grid_size=grid_size,
+            n_tasks=n_data,
+        )
+        self._include_goal = include_goal
+        self._episode_length = grid_world.episode_length
 
         data = list(self.collect_data(grid_world, **value_iteration_args))
         components = zip(*data)
@@ -103,6 +103,10 @@ class Data(data.base.Data):
         _, _, goal_dim = self.goals.shape
         _, _, obs_dim = self.observations.shape
         return [goal_dim, obs_dim, 1, 1]
+
+    @property
+    def episode_length(self):
+        return 1 + self.grid_size**2
 
     @property
     def include_goal(self):

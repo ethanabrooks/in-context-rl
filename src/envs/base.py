@@ -11,7 +11,7 @@ class Env(gym.Env, ABC):
         pass
 
     @abstractmethod
-    def get_task(self):
+    def get_task(self, n: int = 1):
         pass
 
     @property
