@@ -42,5 +42,3 @@ seed: 0
 test_freq: 5
 weights_args:
   actions: 5
-  rewards: 1
-  # values: 1
