@@ -67,22 +67,42 @@ def check_dirty():
     assert not Repo(".").is_dirty()
 
 
+def get_relative_git_rev(target_commit: str):
+    repo = Repo(".")
+    target_commit = repo.commit(target_commit)
+
+    # Your current commit or any other commit you want to compare
+    current_commit = repo.head.commit
+
+    # Find the number of commits between the two commits
+    num_commits = sum(
+        1 for _ in repo.iter_commits(rev=f"{current_commit}..{target_commit}")
+    )
+    return f"{str(target_commit)[:7]}~{num_commits}"
+
+
 parsers = dict(config=option("config", default="explore_then_exploit"))
 
 
 @tree.subcommand(parsers=dict(name=argument("name"), **parsers))
 def log(
-    name: str,
     config: str,
+    name: str,
     allow_dirty: bool = False,
+    rel_to_commit: str = None,
 ):
     if not allow_dirty:
         check_dirty()
 
     config_name = config
     config = get_config(config)
+    relative_commit = (
+        None if rel_to_commit is None else get_relative_git_rev(rel_to_commit)
+    )
     run = wandb.init(
-        config=dict(**config, config=config_name), name=name, project=get_project_name()
+        config=dict(**config, config=config_name, relative_commit=relative_commit),
+        name=name,
+        project=get_project_name(),
     )
     train(**config, run=run)
 
