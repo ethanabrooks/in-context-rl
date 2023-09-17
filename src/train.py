@@ -12,7 +12,7 @@ from wandb.sdk.wandb_run import Run
 
 import data
 import wandb
-from evaluators.ad import evaluate
+from evaluators.ad import Evaluator
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy, plot_returns
@@ -104,7 +104,11 @@ def train(
                 log_t = t // log_freq
                 if log_t % test_freq == 0:
                     df = pd.DataFrame.from_records(
-                        list(evaluate(dataset=dataset, net=net, **evaluate_args))
+                        list(
+                            Evaluator.evaluate(
+                                dataset=dataset, net=net, **evaluate_args
+                            )
+                        )
                     )
 
                     min_return, max_return = dataset.return_range

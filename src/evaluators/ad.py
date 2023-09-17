@@ -43,27 +43,35 @@ def get_metric(
         return "regret", regret
 
 
-def evaluate(dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
-    N = n_rollouts
-    env_fns = [dataset.build_env for _ in range(N)]
-    envs: SubprocVecEnv
-    envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
-    evaluator = Evaluator(dataset=dataset, envs=envs, n_rollouts=n_rollouts, **kwargs)
-    try:
-        yield from evaluator.rollout()
-    finally:
-        envs.close()
+class Evaluator:
+    @classmethod
+    def evaluate(cls, dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
+        N = n_rollouts
+        env_fns = [dataset.build_env for _ in range(N)]
+        envs: SubprocVecEnv
+        envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
+        try:
+            evaluator = cls.make_rollout(
+                dataset=dataset, envs=envs, n_rollouts=n_rollouts, **kwargs
+            )
+            yield from evaluator.rollout()
+        finally:
+            envs.close()
+
+    @staticmethod
+    def make_rollout(*args, **kwargs):
+        return Rollout(*args, **kwargs)
 
 
 @dataclass
-class Evaluator:
+class Rollout:
     dataset: Data
     envs: SubprocVecEnv
     gamma: float
     n_rollouts: int
     net: GPT
 
-    def get_action(self, ctx: torch.Tensor):
+    def get_action(self, ctx: torch.Tensor) -> torch.Tensor:
         dataset = self.dataset
         net = self.net
         N = self.n_rollouts
