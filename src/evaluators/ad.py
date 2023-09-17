@@ -75,6 +75,22 @@ class Rollout:
         N = self.n_rollouts
         T = self.dataset.episode_length * self.dataset.episodes_per_rollout
         O = get_dim(self.envs.observation_space)
+
+        # task
+        task = torch.tensor(self.envs.get_task()).cuda()
+        assert [*task.shape] == [N, 2]
+        if not self.dataset.include_goal:
+            task = torch.zeros_like(task)
+        task_dim = get_dim(self.envs.task_space)
+        assert [*task.shape] == [N, task_dim]
+        self.task = task
+
+        # observation
+        observation = self.envs.reset()
+        O = get_dim(self.envs.observation_space)
+        assert [*observation.shape] == [N, O]
+        self.first_observation = observation
+
         task_dim = get_dim(self.envs.task_space)
         self.tasks = torch.zeros(N, T, task_dim).cuda()
         self.observations = torch.zeros(N, T, O).cuda()
@@ -107,21 +123,10 @@ class Rollout:
 
     def rollout(self):
         N = self.n_rollouts
+        O = get_dim(self.envs.observation_space)
         envs = self.envs
         dataset = self.dataset
-
-        # task
-        task = torch.tensor(envs.get_task()).cuda()
-        assert [*task.shape] == [N, 2]
-        if not dataset.include_goal:
-            task = torch.zeros_like(task)
-        task_dim = get_dim(envs.task_space)
-        assert [*task.shape] == [N, task_dim]
-
-        # observation
-        observation = envs.reset()
-        O = get_dim(envs.observation_space)
-        assert [*observation.shape] == [N, O]
+        observation = self.first_observation
 
         # actions
         dummy_action = torch.tensor(dataset.pad_value).repeat(N, 1).cuda()
@@ -139,7 +144,7 @@ class Rollout:
         episode_t = np.zeros(N, dtype=int)
 
         for t in tqdm(range(T)):
-            tasks[:, t] = task
+            tasks[:, t] = self.task
             observations[:, t] = torch.tensor(observation).cuda()
 
             # create sequence
