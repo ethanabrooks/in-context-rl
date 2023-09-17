@@ -1,11 +1,9 @@
 import os
-import random
 import time
 from collections import Counter
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 import torch
 from rich import print
@@ -19,22 +17,7 @@ from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy, plot_returns
 from pretty import Table, render_graph
-
-
-def set_seed(seed: int):
-    # Set the seed for PyTorch
-    torch.manual_seed(seed)
-
-    # If you are using CUDA (GPU), you also need to set the seed for the CUDA device
-    # This ensures reproducibility for GPU calculations as well
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-    # Set the seed for NumPy
-    np.random.seed(seed)
-
-    # Set the seed for Python's random module
-    random.seed(seed)
+from utils import set_seed
 
 
 def train(
