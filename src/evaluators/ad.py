@@ -28,6 +28,15 @@ def get_dim(space: Space) -> int:
         raise NotImplementedError
 
 
+def clamp(action: torch.Tensor, space: Space):
+    if isinstance(space, Discrete):
+        return torch.clamp(action, min=0, max=space.n - 1)
+    elif isinstance(space, MultiDiscrete):
+        return torch.clamp(action, min=0, max=space.nvec - 1)
+    else:
+        raise NotImplementedError
+
+
 def get_metric(
     info,
     rewards,
@@ -102,21 +111,18 @@ class Rollout:
         dataset = self.dataset
         net = self.net
         N = self.n_rollouts
-        A = self.envs.action_space.n
+        A = get_dim(self.envs.action_space)
 
-        action_dim = get_dim(self.envs.action_space)
+        # pass through net
         logits: torch.Tensor
         logits, _ = net.forward(ctx)
         assert [*logits.shape] == [N, net.context_size, 1 + dataset.n_tokens]
 
-        # zero out invalid actions
+        # access action logits
         logits = logits[:, :-1]  # exclude reward prediction
-        logits = logits[:, -action_dim:]  # only consider last action
-        valid = logits[:, :, :A]
-        invalid = -1e8 * torch.ones_like(logits[:, :, A:])
+        logits = logits[:, -A:]  # only consider last action
 
         # sample action
-        logits = torch.cat([valid, invalid], dim=-1)
         probs = logits.softmax(dim=-1)
         assert [*probs.shape] == [N, 1, dataset.n_tokens + 1]
         return torch.multinomial(probs.squeeze(1), num_samples=1)
@@ -162,7 +168,7 @@ class Rollout:
             pad_size = 1 + self.net.context_size - ctx.numel() // N
             ctx = F.pad(ctx, (pad_size, 0), value=dataset.pad_value)
             action = self.get_action(ctx)
-
+            action = clamp(action, self.envs.action_space)
             observation, reward, done, info = envs.step(action.squeeze(0).cpu().numpy())
             assert [*observation.shape] == [N, O]
             assert [*reward.shape] == [N]
