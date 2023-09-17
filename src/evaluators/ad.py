@@ -75,6 +75,7 @@ class Rollout:
         N = self.n_rollouts
         T = self.dataset.episode_length * self.dataset.episodes_per_rollout
         O = get_dim(self.envs.observation_space)
+        A = get_dim(self.envs.action_space)
 
         # task
         task = torch.tensor(self.envs.get_task()).cuda()
@@ -94,7 +95,7 @@ class Rollout:
         task_dim = get_dim(self.envs.task_space)
         self.tasks = torch.zeros(N, T, task_dim).cuda()
         self.observations = torch.zeros(N, T, O).cuda()
-        self.actions = torch.zeros(N, T).cuda()
+        self.actions = torch.zeros(N, T, A).cuda()
         self.rewards = torch.zeros(N, T).cuda()
 
     def get_action(self, ctx: torch.Tensor) -> torch.Tensor:
@@ -118,18 +119,18 @@ class Rollout:
         logits = torch.cat([valid, invalid], dim=-1)
         probs = logits.softmax(dim=-1)
         assert [*probs.shape] == [N, 1, dataset.n_tokens + 1]
-        [action] = torch.multinomial(probs.squeeze(1), num_samples=1).T
-        return action
+        return torch.multinomial(probs.squeeze(1), num_samples=1)
 
     def rollout(self):
         N = self.n_rollouts
         O = get_dim(self.envs.observation_space)
+        A = get_dim(self.envs.action_space)
         envs = self.envs
         dataset = self.dataset
         observation = self.first_observation
 
         # actions
-        dummy_action = torch.tensor(dataset.pad_value).repeat(N, 1).cuda()
+        dummy_action = torch.tensor(dataset.pad_value).repeat(N, A).cuda()
 
         # reward
         dummy_reward = torch.tensor(dataset.pad_value).repeat(N, 1).cuda()
@@ -151,7 +152,7 @@ class Rollout:
             sequence = [
                 tasks[:, : t + 1],
                 observations[:, : t + 1],
-                torch.cat([actions[:, :t], dummy_action], dim=1),
+                torch.cat([actions[:, :t], dummy_action[:, None]], dim=1),
                 torch.cat([rewards[:, :t], dummy_reward], dim=1),
             ]
 
@@ -162,7 +163,7 @@ class Rollout:
             ctx = F.pad(ctx, (pad_size, 0), value=dataset.pad_value)
             action = self.get_action(ctx)
 
-            observation, reward, done, info = envs.step(action.cpu().numpy())
+            observation, reward, done, info = envs.step(action.squeeze(0).cpu().numpy())
             assert [*observation.shape] == [N, O]
             assert [*reward.shape] == [N]
             assert [*done.shape] == [N]

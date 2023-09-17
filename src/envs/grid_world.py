@@ -147,7 +147,13 @@ class GridWorld:
             # Update current current_states
             current_states = next_states
 
-        return self.goals[:, None].expand_as(states), states, actions, rewards, done
+        return (
+            self.goals[:, None].expand_as(states),
+            states,
+            actions[..., None],
+            rewards,
+            done,
+        )
 
     @property
     def n_states(self):

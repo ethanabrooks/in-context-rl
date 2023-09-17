@@ -125,7 +125,7 @@ class Data(data.base.Data):
 
     def cat_sequence(self, goals, observations, actions, rewards):
         data = torch.cat(
-            [goals, observations, actions[..., None], rewards[..., None]],
+            [goals, observations, actions, rewards[..., None]],
             dim=-1,
         )
         n_data, _, _ = data.shape
@@ -154,7 +154,6 @@ class Data(data.base.Data):
         n_batch, _ = sequence.shape
         sequence = sequence.reshape(n_batch, -1, self.step_dim)
         goals, observations, actions, rewards = sequence.split(self._dims, dim=-1)
-        actions = actions.squeeze(-1)
         rewards = rewards.squeeze(-1)
         return dict(
             goals=goals, observations=observations, actions=actions, rewards=rewards
