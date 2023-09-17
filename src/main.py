@@ -81,7 +81,7 @@ def get_relative_git_rev(target_commit: str):
     return f"{str(target_commit)[:7]}~{num_commits}"
 
 
-parsers = dict(config=option("config", default="explore_then_exploit"))
+parsers = dict(config=option("config", default="ad5x5"))
 
 
 @tree.subcommand(parsers=dict(name=argument("name"), **parsers))
