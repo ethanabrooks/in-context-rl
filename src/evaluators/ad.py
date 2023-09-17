@@ -71,6 +71,16 @@ class Rollout:
     n_rollouts: int
     net: GPT
 
+    def __post_init__(self):
+        N = self.n_rollouts
+        T = self.dataset.episode_length * self.dataset.episodes_per_rollout
+        O = get_dim(self.envs.observation_space)
+        task_dim = get_dim(self.envs.task_space)
+        self.tasks = torch.zeros(N, T, task_dim).cuda()
+        self.observations = torch.zeros(N, T, O).cuda()
+        self.actions = torch.zeros(N, T).cuda()
+        self.rewards = torch.zeros(N, T).cuda()
+
     def get_action(self, ctx: torch.Tensor) -> torch.Tensor:
         dataset = self.dataset
         net = self.net
@@ -120,10 +130,10 @@ class Rollout:
         dummy_reward = torch.tensor(dataset.pad_value).repeat(N, 1).cuda()
 
         T = dataset.episode_length * dataset.episodes_per_rollout
-        tasks = torch.zeros(N, T, task_dim).cuda()
-        observations = torch.zeros(N, T, O).cuda()
-        actions = torch.zeros(N, T).cuda()
-        rewards = torch.zeros(N, T).cuda()
+        tasks = self.tasks
+        observations = self.observations
+        actions = self.actions
+        rewards = self.rewards
         episode_count = np.zeros(N, dtype=int)
         episode_rewards = np.zeros((N, dataset.episode_length))
         episode_t = np.zeros(N, dtype=int)
