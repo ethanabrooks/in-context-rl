@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from gym.spaces import Discrete, MultiDiscrete, Space
 from tqdm import tqdm
 
-from data.base import Data
+from data.base import Data, Step
 from envs.parallel.dummy_vec_env import DummyVecEnv
 from envs.parallel.subproc_vec_env import SubprocVecEnv
 from models import GPT
@@ -155,15 +155,15 @@ class Rollout:
             observations[:, t] = torch.tensor(observation).cuda()
 
             # create sequence
-            sequence = [
-                tasks[:, : t + 1],
-                observations[:, : t + 1],
-                torch.cat([actions[:, :t], dummy_action[:, None]], dim=1),
-                torch.cat([rewards[:, :t], dummy_reward], dim=1),
-            ]
+            sequence = Step(
+                tasks=tasks[:, : t + 1],
+                observations=observations[:, : t + 1],
+                actions=torch.cat([actions[:, :t], dummy_action[:, None]], dim=1),
+                rewards=torch.cat([rewards[:, :t], dummy_reward], dim=1),
+            )
 
             ## create context and pad
-            ctx = dataset.cat_sequence(*sequence)
+            ctx = dataset.cat_sequence(sequence)
             assert [*ctx.shape] == [N, (t + 1) * dataset.step_dim]
             pad_size = dataset.context_size - ctx.numel() // N
             ctx = F.pad(ctx, (pad_size, 0), value=dataset.pad_value)

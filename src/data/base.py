@@ -89,4 +89,4 @@ class Data(Dataset, ABC):
         for k, v in kwargs.items():
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
-        return self.cat_sequence(**sequence).cuda()
+        return self.cat_sequence(Step(**sequence)).cuda()

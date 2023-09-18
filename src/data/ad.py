@@ -55,26 +55,29 @@ class Data(data.base.Data):
         components = Step(*components)
         if not include_goal:
             components = replace(components, tasks=torch.zeros_like(components.tasks))
-        masks = [
-            expand_as(~done, c).roll(dims=[1], shifts=[1])
-            for c in [components.tasks, components.observations]
-        ] + [torch.ones_like(c) for c in [components.actions, components.rewards]]
+        masks = Step(
+            tasks=expand_as(~done, components.tasks).roll(dims=[1], shifts=[1]),
+            observations=expand_as(~done, components.observations).roll(
+                dims=[1], shifts=[1]
+            ),
+            actions=torch.ones_like(components.actions),
+            rewards=torch.ones_like(components.rewards),
+        )
         if mask_nonactions:
-            goals_mask, obs_mask, actions_mask, rewards_mask = masks
-            masks = [
-                torch.zeros_like(goals_mask),
-                torch.zeros_like(obs_mask),
-                actions_mask,
-                torch.zeros_like(rewards_mask),
-            ]
+            masks = replace(
+                masks,
+                tasks=torch.zeros_like(masks.tasks),
+                observations=torch.zeros_like(masks.observations),
+                rewards=torch.zeros_like(masks.rewards),
+            )
 
         self.tasks = components.tasks
         self.observations = components.observations
         self.actions = components.actions
         self.rewards = components.rewards
 
-        mask = self.cat_sequence(*masks)
-        data = self.cat_sequence(**asdict(components))
+        mask = self.cat_sequence(masks)
+        data = self.cat_sequence(components)
         sequence = self.split_sequence(data)
         for name, component in asdict(sequence).items():
             assert (getattr(components, name) == component).all()
@@ -129,9 +132,10 @@ class Data(data.base.Data):
     def build_env(self):
         return Env(grid_size=self.grid_size, episode_length=self.episode_length)
 
-    def cat_sequence(self, tasks, observations, actions, rewards):
+    def cat_sequence(self, step: Step):
+        step = replace(step, rewards=step.rewards[..., None])
         data = torch.cat(
-            [tasks, observations, actions, rewards[..., None]],
+            astuple(step),
             dim=-1,
         )
         n_data, _, _ = data.shape
