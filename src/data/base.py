@@ -1,13 +1,30 @@
 from abc import ABC, abstractmethod
+from dataclasses import asdict, astuple, dataclass
 from functools import lru_cache
+from typing import Generic, TypeVar
 
 import torch
 from torch.utils.data import Dataset
 
 from envs.base import Env
 
+T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class Step(Generic[T]):
+    tasks: T
+    observations: T
+    actions: T
+    rewards: T
+
 
 class Data(Dataset, ABC):
+    @property
+    @abstractmethod
+    def dims(self) -> Step:
+        pass
+
     @property
     @abstractmethod
     def episode_length(self) -> int:
@@ -40,7 +57,7 @@ class Data(Dataset, ABC):
 
     @property
     def step_dim(self):
-        return sum(self._dims)
+        return sum(astuple(self.dims))
 
     @abstractmethod
     def build_env(self) -> Env:
@@ -63,7 +80,7 @@ class Data(Dataset, ABC):
     @lru_cache
     def weights(self, shape, **kwargs):
         weights = torch.ones(shape)
-        sequence = self.split_sequence(weights)
+        sequence = asdict(self.split_sequence(weights))
         for k, v in kwargs.items():
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v

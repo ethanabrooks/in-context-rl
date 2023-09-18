@@ -1,9 +1,11 @@
 from collections import defaultdict
+from dataclasses import asdict, astuple, replace
 
 import torch
 import torch.nn.functional as F
 
 import data.base
+from data.base import Step
 from envs.grid_world_env import Env
 from envs.value_iteration import ValueIteration
 from pretty import console
@@ -46,22 +48,17 @@ class Data(data.base.Data):
         self._include_goal = include_goal
 
         data = list(self.collect_data(grid_world, **value_iteration_args))
+        data = [[*astuple(components), done] for components, done in data]
         components = zip(*data)
         components = [torch.cat(c, dim=1) for c in components]
-        (
-            self.goals,
-            self.observations,
-            self.actions,
-            self.rewards,
-            self.done,
-        ) = components
+        *components, done = components
+        components = Step(*components)
         if not include_goal:
-            self.goals = torch.zeros_like(self.goals)
-        components = [self.goals, self.observations, self.actions, self.rewards]
+            components = replace(components, tasks=torch.zeros_like(components.tasks))
         masks = [
-            expand_as(~self.done, c).roll(dims=[1], shifts=[1])
-            for c in [self.goals, self.observations]
-        ] + [torch.ones_like(c) for c in [self.actions, self.rewards]]
+            expand_as(~done, c).roll(dims=[1], shifts=[1])
+            for c in [components.tasks, components.observations]
+        ] + [torch.ones_like(c) for c in [components.actions, components.rewards]]
         if mask_nonactions:
             goals_mask, obs_mask, actions_mask, rewards_mask = masks
             masks = [
@@ -71,11 +68,16 @@ class Data(data.base.Data):
                 torch.zeros_like(rewards_mask),
             ]
 
+        self.tasks = components.tasks
+        self.observations = components.observations
+        self.actions = components.actions
+        self.rewards = components.rewards
+
         mask = self.cat_sequence(*masks)
-        data = self.cat_sequence(*components)
+        data = self.cat_sequence(**asdict(components))
         sequence = self.split_sequence(data)
-        for name, component in sequence.items():
-            assert (getattr(self, name) == component).all()
+        for name, component in asdict(sequence).items():
+            assert (getattr(components, name) == component).all()
 
         data = data.reshape(n_data, -1, self.step_dim)
         mask = mask.reshape(n_data, -1, self.step_dim)
@@ -99,10 +101,10 @@ class Data(data.base.Data):
         return self.n_data * self.steps_per_row
 
     @property
-    def _dims(self):
-        _, _, goal_dim = self.goals.shape
+    def dims(self):
+        _, _, goal_dim = self.tasks.shape
         _, _, obs_dim = self.observations.shape
-        return [goal_dim, obs_dim, 1, 1]
+        return Step(tasks=goal_dim, observations=obs_dim, actions=1, rewards=1)
 
     @property
     def episode_length(self):
@@ -123,9 +125,9 @@ class Data(data.base.Data):
     def build_env(self):
         return Env(grid_size=self.grid_size, episode_length=self.episode_length)
 
-    def cat_sequence(self, goals, observations, actions, rewards):
+    def cat_sequence(self, tasks, observations, actions, rewards):
         data = torch.cat(
-            [goals, observations, actions, rewards[..., None]],
+            [tasks, observations, actions, rewards[..., None]],
             dim=-1,
         )
         n_data, _, _ = data.shape
@@ -143,7 +145,7 @@ class Data(data.base.Data):
                 f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."
             )
             if t % self.yield_every == 0:
-                yield g, s, a, r, d
+                yield Step(tasks=g, observations=s, actions=a, rewards=r), d
 
     def index_1d_to_2d(self, index):
         row = index // self.steps_per_row
@@ -153,11 +155,11 @@ class Data(data.base.Data):
     def split_sequence(self, sequence: torch.Tensor):
         n_batch, _ = sequence.shape
         sequence = sequence.reshape(n_batch, -1, self.step_dim)
-        goals, observations, actions, rewards = sequence.split(self._dims, dim=-1)
-        rewards = rewards.squeeze(-1)
-        return dict(
-            goals=goals, observations=observations, actions=actions, rewards=rewards
-        )
+        dims = astuple(self.dims)
+        components = sequence.split(dims, dim=-1)
+        components = Step(*components)
+        components.rewards.squeeze_(-1)
+        return components
 
     def get_metrics(
         self,
@@ -181,9 +183,9 @@ class Data(data.base.Data):
         acc["(total) accuracy"] = (preds == tgts)[mask.bool()]
         iterator = list(
             zip(
-                split_preds.items(),
-                split_tgts.items(),
-                split_masks.items(),
+                asdict(split_preds).items(),
+                asdict(split_tgts).items(),
+                asdict(split_masks).items(),
             )
         )
         for (name, pred), (name2, tgt), (name3, mask) in iterator:
