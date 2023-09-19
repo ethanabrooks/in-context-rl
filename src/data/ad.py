@@ -207,7 +207,7 @@ class Data(data.base.Data):
         for i in range(seq_len):
             for (name, pred), (name2, tgt), (name3, mask) in iterator:
                 assert name == name2 == name3
-                _, component_seq_len, *_ = pred[mask].shape
+                _, component_seq_len, *_ = pred.shape
 
                 if i >= component_seq_len:
                     continue
