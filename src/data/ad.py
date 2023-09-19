@@ -55,11 +55,13 @@ class Data(data.base.Data):
         components = Step(*components)
         if not include_goal:
             components = replace(components, tasks=torch.zeros_like(components.tasks))
+
+        def make_mask(component: torch.Tensor):
+            return expand_as(~done, component).roll(dims=[1], shifts=[1])
+
         masks = Step(
-            tasks=expand_as(~done, components.tasks).roll(dims=[1], shifts=[1]),
-            observations=expand_as(~done, components.observations).roll(
-                dims=[1], shifts=[1]
-            ),
+            tasks=make_mask(components.tasks),
+            observations=make_mask(components.observations),
             actions=torch.ones_like(components.actions),
             rewards=torch.ones_like(components.rewards),
         )
