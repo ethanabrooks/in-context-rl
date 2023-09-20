@@ -21,9 +21,14 @@ class Evaluator(evaluators.ad.Evaluator):
 class PlanningRollout(evaluators.ad.Rollout):
     history: torch.Tensor
     t: int
+    episode_t: np.ndarray
 
     def __post_init__(self):
         pass
+
+    @property
+    def episode_length(self):
+        return 1 + self.dataset.episode_length - self.episode_t.max()
 
     @property
     def episodes_per_rollout(self):
@@ -57,7 +62,7 @@ class PlanningRollout(evaluators.ad.Rollout):
         observation = self.predict_many(history, t + 1, *self.idxs.observations)
         assert [*observation.shape] == [self.n_rollouts, O]
 
-        done = t + 1 == self.dataset.episode_length
+        done = t + 1 == self.episode_length
         done = np.full(reward.shape, fill_value=done, dtype=bool)
 
         return StepResult(
@@ -72,10 +77,11 @@ class PlanningRollout(evaluators.ad.Rollout):
 class Rollout(evaluators.ad.Rollout):
     n_actions: int
 
-    def get_action(self, history: torch.Tensor, t: int) -> torch.Tensor:
+    def get_action(self, history: torch.Tensor, t: int, episode_t) -> torch.Tensor:
         planner = PlanningRollout(
             dataset=self.dataset,
             envs=self.envs,
+            episode_t=episode_t,
             gamma=self.gamma,
             history=history.repeat(self.n_actions, 1),
             n_rollouts=self.n_rollouts * self.n_actions,

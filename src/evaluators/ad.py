@@ -93,10 +93,14 @@ class Rollout:
     task: torch.Tensor
 
     @property
+    def episode_length(self):
+        return self.dataset.episode_length
+
+    @property
     def episodes_per_rollout(self):
         return self.dataset.episodes_per_rollout
 
-    def get_action(self, history: torch.Tensor, t: int) -> torch.Tensor:
+    def get_action(self, history: torch.Tensor, t: int, episode_t: int) -> torch.Tensor:
         action = self.predict_many(history, t, *self.idxs.actions)
         return clamp(action, self.envs.action_space)
 
@@ -118,7 +122,7 @@ class Rollout:
     def init_history(self):
         N = self.n_rollouts
         O = self.dataset.dims.observations
-        T = self.dataset.episode_length * self.dataset.episodes_per_rollout
+        T = self.episode_length * self.episodes_per_rollout
         history = torch.full(
             (N, self.index(T)),
             self.dataset.pad_value,
@@ -179,16 +183,15 @@ class Rollout:
         A = self.dataset.dims.actions
         N = self.n_rollouts
         O = self.dataset.dims.observations
-        dataset = self.dataset
 
         episode_count = np.zeros(N, dtype=int)
-        episode_rewards = np.zeros((N, dataset.episode_length))
+        episode_rewards = np.zeros((N, self.episode_length))
         episode_t = np.zeros(N, dtype=int)
 
         history = self.init_history()
-        for t in tqdm(range(self.dataset.episode_length * self.episodes_per_rollout)):
+        for t in tqdm(range(self.episode_length * self.episodes_per_rollout)):
             start = self.index(t)
-            action = self.get_action(history, t)
+            action = self.get_action(history, t, episode_t)
             history[:, start - 1 - A : start - 1] = action
             step = self.step(action, history, t)
 
