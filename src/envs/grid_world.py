@@ -6,8 +6,9 @@ from tqdm import tqdm
 
 
 class GridWorld:
-    def __init__(self, episode_length: int, grid_size: int, n_tasks: int):
+    def __init__(self, episode_length: int, grid_size: int, n_tasks: int, seed: int):
         super().__init__()
+        self.random = np.random.default_rng(seed)
         self.episode_length = episode_length
         self.grid_size = grid_size
         self.states = torch.tensor(
@@ -160,10 +161,12 @@ class GridWorld:
         return self.grid_size**2 + 1
 
     def reset_fn(self):
-        return torch.randint(0, self.grid_size, (self.n_tasks, 2))
+        array = self.random.choice(self.grid_size, size=(self.n_tasks, 2))
+        return torch.tensor(array)
 
     def sample_goals(self, n: int):
-        return torch.randint(0, self.grid_size, (n, 2))
+        array = self.random.choice(self.grid_size, size=(n, 2))
+        return torch.tensor(array)
 
     def step_fn(
         self,

@@ -5,6 +5,7 @@ data_args:
   grid_world_args:
     atol: 0.2
     gamma: 0.99
+    seed: ${seed}
   include_goal: false
   mask_nonactions: true
   n_data: 100_000

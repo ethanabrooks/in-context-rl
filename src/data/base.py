@@ -65,7 +65,7 @@ class Data(Dataset, ABC):
         return sum(astuple(self.dims))
 
     @abstractmethod
-    def build_env(self) -> Env:
+    def build_env(self, seed: int) -> Env:
         pass
 
     @abstractmethod

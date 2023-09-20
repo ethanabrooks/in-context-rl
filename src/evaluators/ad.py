@@ -1,3 +1,4 @@
+import functools
 from dataclasses import asdict, astuple, dataclass
 
 import numpy as np
@@ -45,7 +46,7 @@ def get_metric(
 class Evaluator:
     def evaluate(self, dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
         N = n_rollouts
-        env_fns = [dataset.build_env for _ in range(N)]
+        env_fns = [functools.partial(dataset.build_env, seed=i) for i in range(N)]
         envs: SubprocVecEnv
         envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
         task = torch.tensor(envs.get_task()).cuda()

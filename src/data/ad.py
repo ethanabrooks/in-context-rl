@@ -133,8 +133,10 @@ class Data(data.base.Data):
     def episodes_per_rollout(self):
         return self.n_rounds * self.n_episodes
 
-    def build_env(self):
-        return Env(grid_size=self.grid_size, episode_length=self.episode_length)
+    def build_env(self, seed: int):
+        return Env(
+            grid_size=self.grid_size, episode_length=self.episode_length, seed=seed
+        )
 
     def cat_sequence(self, step: Step):
         step = replace(step, rewards=step.rewards[..., None])
