@@ -101,11 +101,9 @@ class Rollout:
         return clamp(action, self.envs.action_space)
 
     def generate_predictions(self, history: torch.Tensor, t: int, i: int, j: int):
-        start = self.index(t)
         for k in range(i, j):
             prediction = self.predict(history, t, k)
             yield prediction
-            history[:, start + k] = prediction
 
     @property
     def idxs(self):
@@ -143,20 +141,29 @@ class Rollout:
         net = self.net
         N = self.n_rollouts
         K = dataset.n_tokens + 1
+        S = dataset.step_dim
         W = self.dataset.context_size
 
         end = self.index(t)
-        ctx = history[:, end - W : end]
+        start = end - W
+        ctx = history[:, start:end]
 
         # pass through net
         logits: torch.Tensor
         logits, _ = net.forward(ctx)
         assert [*logits.shape] == [N, W - 1, 1 + dataset.n_tokens]
 
+        index_history = i + end
+        if i > 0:
+            index_history -= S
+        index_logits = index_history - start  # subtract start of history
+        index_logits = index_logits - 1  # subtract index offset
+
         # sample probs
-        probs = logits[:, i].softmax(dim=-1)
+        probs = logits[:, index_logits].softmax(dim=-1)
         assert [*probs.shape] == [N, K]
         [prediction] = torch.multinomial(probs, num_samples=1).T
+        history[:, index_history] = prediction
         return prediction
 
     def predict_many(self, history: torch.Tensor, t: int, start: int, end: int):
