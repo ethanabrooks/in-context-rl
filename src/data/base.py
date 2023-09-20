@@ -69,17 +69,9 @@ class Data(Dataset, ABC):
         pass
 
     @abstractmethod
-    def cat_sequence(self, goals, observations, actions, rewards) -> torch.Tensor:
-        pass
-
-    @abstractmethod
     def get_metrics(
         self, logits: torch.Tensor, sequence: torch.Tensor
     ) -> tuple[dict[str, float], dict[str, list[float]]]:
-        pass
-
-    @abstractmethod
-    def split_sequence(self, sequence: torch.Tensor):
         pass
 
     @lru_cache
