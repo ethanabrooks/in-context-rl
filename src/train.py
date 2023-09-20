@@ -36,18 +36,13 @@ def train(
     n_epochs: int,
     optimizer_config: dict,
     run: Optional[Run],
-    run_name: str,
     save_freq: int,
     seed: int,
     test_ad_freq: int,
     test_adpp_freq: int,
     weights_args: dict,
 ) -> None:
-    save_dir = os.path.join("results", run_name)
     set_seed(seed)
-
-    if not os.path.isdir(save_dir):
-        os.makedirs(save_dir)
 
     dataset = data.make(data_path, **data_args)
 
@@ -160,9 +155,13 @@ def train(
 
             # save
             if t % save_freq == 0:
-                torch.save(
-                    {"state_dict": net.state_dict()},
-                    os.path.join(save_dir, "model.tar"),
-                )
+                save(run, net)
 
-    torch.save({"state_dict": net.state_dict()}, os.path.join(save_dir, "model.tar"))
+    save(run, net)
+
+
+def save(run: Run, net: GPT):
+    if run is not None:
+        savepath = os.path.join(run.dir, "model.tar")
+        torch.save({"state_dict": net.state_dict()}, savepath)
+        wandb.save(savepath)

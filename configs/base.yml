@@ -39,7 +39,6 @@ n_epochs: 2
 optimizer_config:
   betas: [0.9, 0.95]
   weight_decay: 0.1
-run_name: trial
 save_freq: 400
 seed: 0
 test_ad_freq: 5
