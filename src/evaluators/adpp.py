@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn.functional as F
 
 import evaluators.ad
 from evaluators.ad import StepResult, clamp
@@ -19,6 +20,7 @@ class Evaluator(evaluators.ad.Evaluator):
 @dataclass
 class PlanningRollout(evaluators.ad.Rollout):
     history: torch.Tensor
+    t: int
 
     def __post_init__(self):
         pass
@@ -27,8 +29,18 @@ class PlanningRollout(evaluators.ad.Rollout):
     def episodes_per_rollout(self):
         return 1
 
+    def index(self, t: int):
+        return super().index(t + self.t)
+
     def init_history(self):
-        return self.history
+        T = self.dataset.episode_length * self.dataset.episodes_per_rollout
+        required_width = self.index(T)
+        _, L = self.history.shape
+        pad = required_width - L
+        if pad > 0:
+            return F.pad(self.history, (0, pad), value=self.dataset.pad_value)
+        else:
+            return self.history
 
     def reset(self, *_, **__):
         pass  # No reset. Only one episode.
@@ -42,7 +54,7 @@ class PlanningRollout(evaluators.ad.Rollout):
         i, j = self.index(t) + self.idxs.tasks
         history[:, i:j] = self.task
 
-        observation = self.predict_many(history, t, *self.idxs.observations)
+        observation = self.predict_many(history, t + 1, *self.idxs.observations)
         assert [*observation.shape] == [self.n_rollouts, O]
 
         done = t + 1 == self.dataset.episode_length
@@ -68,6 +80,7 @@ class Rollout(evaluators.ad.Rollout):
             history=history.repeat(self.n_actions, 1),
             n_rollouts=self.n_rollouts * self.n_actions,
             net=self.net,
+            t=t,
             task=self.task.repeat(self.n_actions, 1),
         )
         rollouts = list(planner.rollout())
