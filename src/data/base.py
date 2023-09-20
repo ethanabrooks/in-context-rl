@@ -22,6 +22,11 @@ class Step(Generic[T]):
 class Data(Dataset, ABC):
     @property
     @abstractmethod
+    def context_size(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
     def dims(self) -> Step:
         pass
 

@@ -101,6 +101,10 @@ class Data(data.base.Data):
         return self.n_data * self.steps_per_row
 
     @property
+    def context_size(self):
+        return self.steps_per_context * self.step_dim
+
+    @property
     def dims(self):
         _, _, goal_dim = self.tasks.shape
         _, _, obs_dim = self.observations.shape

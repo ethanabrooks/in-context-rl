@@ -116,7 +116,7 @@ class Rollout:
         # pass through net
         logits: torch.Tensor
         logits, _ = net.forward(ctx)
-        assert [*logits.shape] == [N, net.context_size, 1 + dataset.n_tokens]
+        assert [*logits.shape] == [N, dataset.context_size - 1, 1 + dataset.n_tokens]
 
         # access action logits
         logits = logits[:, :-1]  # exclude reward prediction
@@ -165,7 +165,7 @@ class Rollout:
             ## create context and pad
             ctx = dataset.cat_sequence(*sequence)
             assert [*ctx.shape] == [N, (t + 1) * dataset.step_dim]
-            pad_size = 1 + self.net.context_size - ctx.numel() // N
+            pad_size = dataset.context_size - ctx.numel() // N
             ctx = F.pad(ctx, (pad_size, 0), value=dataset.pad_value)
             action = self.get_action(ctx)
             action = clamp(action, self.envs.action_space)
