@@ -163,6 +163,12 @@ class Rollout:
         index_logits = index_history - start  # subtract start of history
         index_logits = index_logits - 1  # subtract index offset
 
+        pad_value = self.dataset.pad_value
+        assert torch.any(ctx[:, index_logits] != pad_value)
+        assert torch.any(history[:, index_history - 1] != pad_value)
+        assert torch.all(ctx[:, index_logits + 1] == pad_value)
+        assert torch.all(history[:, index_history] == pad_value)
+
         # sample probs
         probs = logits[:, index_logits].softmax(dim=-1)
         assert [*probs.shape] == [N, K]
