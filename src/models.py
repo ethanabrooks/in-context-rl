@@ -178,10 +178,6 @@ class GPT(nn.Module):
         self.embedding_dim = n_embd
         self.apply(self._init_weights)
 
-    @property
-    def context_size(self):
-        return self._context_size
-
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
             module.weight.data.normal_(mean=0.0, std=0.02)
@@ -236,7 +232,7 @@ class GPT(nn.Module):
         targets = sequence[:, 1:].contiguous()
 
         b, t = inputs.size()
-        assert t <= self.context_size, "Cannot forward, model block size is exhausted."
+        assert t <= self._context_size, "Cannot forward, model block size is exhausted."
 
         offset_idx = self.offset_tokens(inputs)
         ## [ B x T x embedding_dim ]
