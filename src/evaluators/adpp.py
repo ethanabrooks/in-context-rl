@@ -78,23 +78,43 @@ class Rollout(evaluators.ad.Rollout):
     n_actions: int
 
     def get_action(self, history: torch.Tensor, t: int, episode_t) -> torch.Tensor:
+        N = self.n_actions
+        i, *_, j = (history[0] != self.dataset.pad_value).nonzero()
+
+        # for each row in history, we perform N rollouts
+        repeated_history = history.repeat(N, 1)  # repeat history N times
         planner = PlanningRollout(
             dataset=self.dataset,
             envs=self.envs,
             episode_t=episode_t,
             gamma=self.gamma,
-            history=history.repeat(self.n_actions, 1),
-            n_rollouts=self.n_rollouts * self.n_actions,
+            history=repeated_history,
+            n_rollouts=self.n_rollouts * N,
             net=self.net,
             t=t,
-            task=self.task.repeat(self.n_actions, 1),
+            task=self.task.repeat(N, 1),
         )
-        rollouts = list(planner.rollout())
+        rollouts = list(planner.rollout())  # rollout for each row in repeated_history
         rollouts = pd.DataFrame.from_records(rollouts)
-        rollouts["row"] = rollouts.n // self.n_actions
-        idx = rollouts.groupby("row").metric.idxmax()
+        rollouts["row"] = rollouts.n % self.n_rollouts  # which row in original history
+        group = rollouts.groupby("row")
+        # group.apply(self.check_identical_elements, i, j)
+        self.check_identical_elements  # whitelist
+        idx = group.metric.idxmax()  # index of best rollout per original row
+
+        # extract actions
         histories = rollouts.loc[idx].history.tolist()
         histories = torch.stack(histories).cuda()
         i, j = self.index(t) + self.idxs.actions
         actions = histories[:, i:j]
         return clamp(actions, self.envs.action_space)
+
+    def check_identical_elements(self, group: pd.DataFrame, i: int, j: int):
+        histories = group["history"].tolist()
+        # Convert to tensor for easier manipulation
+        histories_tensor = torch.stack(histories)
+
+        # Find the index where elements stop being pad_value for the first time
+        non_pad_column = histories_tensor[:, i:j]
+        first_row = non_pad_column[0]
+        assert torch.all(first_row[None] == non_pad_column)
