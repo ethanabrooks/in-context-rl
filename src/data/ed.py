@@ -1,9 +1,10 @@
 import data.ad
+from data.base import Step
 from envs.value_iteration import ValueIteration
 from pretty import console
 
 
-class Data(data.full_history.Data):
+class Data(data.ad.Data):
     def collect_data(self, grid_world: ValueIteration, **kwargs):
         console.log("Value iteration...")
         for t, (V, Pi) in enumerate(
@@ -15,7 +16,7 @@ class Data(data.full_history.Data):
             console.log(
                 f"Round: {t}. Reward: {r.sum(-1).mean().item():.2f}. Value: {V.mean().item():.2f}."
             )
-        yield g, s, a, r, d
+        yield Step(tasks=g, observations=s, actions=a, rewards=r), d
 
     @property
     def episodes_per_rollout(self):
