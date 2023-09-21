@@ -5,4 +5,5 @@
     "python.analysis.extraPaths": [
         "./src"
     ],
+    "python.formatting.provider": "none",
 }

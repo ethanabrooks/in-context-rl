@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import evaluators.ad
 from evaluators.ad import StepResult, clamp
 
+# from plot import plot_rollout
+
 
 @dataclass
 class Evaluator(evaluators.ad.Evaluator):
@@ -105,6 +107,9 @@ class Rollout(evaluators.ad.Rollout):
         # extract actions
         histories = rollouts.loc[idx].history.tolist()
         histories = torch.stack(histories).cuda()
+        # data = histories[0][histories[0] != 4]
+        # plot_rollout(data.cpu().numpy())
+        # breakpoint()
         i, j = self.index(t) + self.idxs.actions
         actions = histories[:, i:j]
         return clamp(actions, self.envs.action_space)
