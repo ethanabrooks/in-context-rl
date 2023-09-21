@@ -41,7 +41,7 @@ class PlanningRollout(evaluators.ad.Rollout):
 
     def init_history(self):
         T = self.dataset.episode_length * self.dataset.episodes_per_rollout
-        required_width = self.index(T)
+        required_width = self.index(T + 1)
         _, L = self.history.shape
         pad = required_width - L
         if pad > 0:
