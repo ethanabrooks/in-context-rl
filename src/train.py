@@ -24,6 +24,17 @@ from utils import set_seed
 MODEL_FNAME = "model.tar"
 
 
+def load(
+    load_path: Optional[str],
+    net: GPT,
+    run: Optional[Run],
+):
+    root = run.dir if run is not None else f"/tmp/wandb{time.time()}"
+    wandb.restore(MODEL_FNAME, run_path=load_path, root=root)
+    state = torch.load(os.path.join(root, MODEL_FNAME))
+    net.load_state_dict(state, strict=True)
+
+
 def evaluate(
     dataset: Data, evaluator: evaluators.ad.Evaluator, net: GPT, section: str, **kwargs
 ):
@@ -57,6 +68,7 @@ def train(
     data_path: Path,
     evaluate_args: dict,
     grad_norm_clip: float,
+    load_path: Optional[str],
     log_freq: int,
     log_tables_freq: int,
     lr: float,
@@ -77,7 +89,11 @@ def train(
     dataset = data.make(data_path, **data_args)
 
     print("Create net... ", end="", flush=True)
-    net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args).cuda()
+    net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args)
+    if load_path is not None:
+        load(load_path, net, run)
+    net = net.cuda()
+
     print("✓")
 
     optimizer = configure(lr=lr, module=net, **optimizer_config)
@@ -103,9 +119,10 @@ def train(
             optimizer.zero_grad()
             weights = dataset.weights(sequence.shape, **weights_args)
             logits, loss = net.forward(sequence, mask, weights)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(net.parameters(), grad_norm_clip)
-            optimizer.step()
+            if load_path is None:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(net.parameters(), grad_norm_clip)
+                optimizer.step()
 
             # update learning rate
             n_tokens += mask.sum()
@@ -178,5 +195,5 @@ def train(
 def save(run: Run, net: GPT):
     if run is not None:
         savepath = os.path.join(run.dir, MODEL_FNAME)
-        torch.save({"state_dict": net.state_dict()}, savepath)
+        torch.save(net.state_dict(), savepath)
         wandb.save(savepath)

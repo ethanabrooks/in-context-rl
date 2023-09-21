@@ -1,8 +1,6 @@
-import os
 from pathlib import Path
 from typing import Optional
 
-import torch
 from dollar_lambda import CommandTree, argument
 from rich import print
 from wandb.sdk.wandb_run import Run
@@ -13,13 +11,13 @@ import evaluators.adpp
 import wandb
 from main import check_dirty, get_project_name
 from models import GPT
-from train import MODEL_FNAME, evaluate
+from train import evaluate, load
 from utils import set_seed
 
 tree = CommandTree()
 
 
-def load(
+def main(
     adpp_args: dict,
     algo: str,
     data_args: dict,
@@ -37,11 +35,7 @@ def load(
     print("Create net... ", end="", flush=True)
     net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args)
     if load_path is not None:
-        root = run.dir if run is not None else "/tmp"
-        wandb.restore(MODEL_FNAME, run_path=load_path, root=root)
-        state = torch.load(os.path.join(root, MODEL_FNAME))
-        state = {k.replace("module.", ""): v for k, v in state.items()}
-        net.load_state_dict(state["state_dict"], strict=True)
+        load(load_path, net, run)
     net = net.cuda()
     print("✓")
 
@@ -79,7 +73,7 @@ def log(
     )
     loaded_config = wandb.Api().run(load_path).config
     loaded_config.update(config)
-    load(**loaded_config, run=run)
+    main(**loaded_config, run=run)
 
 
 @tree.command(parsers=dict(load_path=argument("load_path")))
@@ -89,7 +83,7 @@ def no_log(
 ):
     loaded_config = wandb.Api().run(load_path).config
     loaded_config.update(algo=algo, load_path=load_path)
-    return load(**loaded_config, run=None)
+    return main(**loaded_config, run=None)
 
 
 if __name__ == "__main__":
