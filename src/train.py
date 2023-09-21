@@ -100,6 +100,7 @@ def train(
 
     counter = Counter()
     n_tokens = 0
+    save_count = 0
     ad_log = {}
     adpp_log = {}
     tick = time.time()
@@ -140,7 +141,12 @@ def train(
             counter.update(dict(**log, loss=loss.item()))
             if t % log_freq == 0:
                 log = {k: v / log_freq for k, v in counter.items()}
-                log.update(epoch=e, lr=decayed_lr, time=(time.time() - tick) / log_freq)
+                log.update(
+                    epoch=e,
+                    lr=decayed_lr,
+                    save_count=save_count,
+                    time=(time.time() - tick) / log_freq,
+                )
                 counter = Counter()
                 tick = time.time()
                 row = dict(step=step, **log)
@@ -188,6 +194,7 @@ def train(
             # save
             if t % save_freq == 0:
                 save(run, net)
+                save_count += 1
 
     save(run, net)
 
