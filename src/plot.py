@@ -59,18 +59,23 @@ def plot_rollout(rollout: np.ndarray):
     ax.plot(sx(tnew), sy(tnew), "r-", label="Smoothed curve")
     ax.plot(x, y, "bo", label="Original points")
 
+    for i, (xi, yi) in enumerate(zip(x, y)):
+        xi += np.random.rand() / 10
+        yi += np.random.rand() / 10
+        ax.text(xi, yi, str(i), fontsize=12)
+
     # Draw arrows based on the deltas
-    for action, reward, x, y in itertools.zip_longest(actions, rewards, x, y):
+    for action, reward, xi, yi in itertools.zip_longest(actions, rewards, x, y):
         if action is not None:
             if reward is None:
                 color = "black"
             elif reward > 0:
-                color == "orange"
+                color = "orange"
             else:
                 color = "blue"
             ax.arrow(
-                x,
-                y,
+                xi,
+                yi,
                 *(0.1 * deltas[action]),
                 head_width=0.1,
                 head_length=0.2,
