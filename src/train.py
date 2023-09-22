@@ -58,6 +58,8 @@ def train(
     data_args: dict,
     data_path: Path,
     evaluate_args: dict,
+    evaluate_ad_args: dict,
+    evaluate_adpp_args: dict,
     grad_norm_clip: float,
     load_path: Optional[str],
     log_interval: int,
@@ -160,6 +162,7 @@ def train(
                         net=net,
                         section="eval AD++",
                         **evaluate_args,
+                        **evaluate_adpp_args,
                     )
                     log.update(fig)
                     log_table.print_header(row)
@@ -170,6 +173,7 @@ def train(
                         net=net,
                         section="eval AD",
                         **evaluate_args,
+                        **evaluate_ad_args,
                     )
                     log.update(fig)
                     log_table.print_header(row)

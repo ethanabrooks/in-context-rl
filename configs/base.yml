@@ -7,6 +7,7 @@ data_args:
     atol: 0.2
     gamma: 0.99
     seed: ${seed}
+  heldout_tasks: []
   include_goal: false
   mask_nonactions: true
   n_data: 100_000
@@ -16,6 +17,10 @@ data_args:
     n_policies: ${data_args.n_data}
   yield_every: 1
 data_path: data/ad
+evaluate_ad_args:
+  use_heldout_tasks: false
+evaluate_adpp_args:
+  use_heldout_tasks: false
 evaluate_args:
   dummy_vec_env: false
   gamma: ${data_args.grid_world_args.gamma}

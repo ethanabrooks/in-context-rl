@@ -8,8 +8,6 @@ import torch.nn.functional as F
 import evaluators.ad
 from evaluators.ad import StepResult, clamp
 
-# from plot import plot_rollout
-
 
 @dataclass
 class Evaluator(evaluators.ad.Evaluator):

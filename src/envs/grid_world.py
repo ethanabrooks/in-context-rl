@@ -11,14 +11,18 @@ class GridWorld:
         dense_reward: bool,
         episode_length: int,
         grid_size: int,
+        heldout_goals: list[tuple[int, int]],
         n_tasks: int,
         seed: int,
+        use_heldout_goals: bool,
     ):
         super().__init__()
         self.random = np.random.default_rng(seed)
         self.dense_reward = dense_reward
         self.episode_length = episode_length
         self.grid_size = grid_size
+        self.heldout_goals = torch.tensor(heldout_goals)
+        self.use_heldout_goals = use_heldout_goals
         self.states = torch.tensor(
             [[i, j] for i in range(grid_size) for j in range(grid_size)]
         )
@@ -177,8 +181,25 @@ class GridWorld:
         return torch.tensor(array)
 
     def sample_goals(self, n: int):
-        array = self.random.choice(self.grid_size, size=(n, 2))
-        return torch.tensor(array)
+        all_states = torch.cartesian_prod(
+            torch.arange(self.grid_size), torch.arange(self.grid_size)
+        )
+
+        # if use_heldout goals, mask starts out as all False, else all True
+        mask = torch.full(
+            [len(all_states)], fill_value=not self.use_heldout_goals, dtype=torch.bool
+        )
+
+        for row in self.heldout_goals:
+            in_heldout_goals = torch.all(all_states == row, dim=1)
+            if self.use_heldout_goals:
+                mask |= in_heldout_goals
+            else:
+                mask &= ~in_heldout_goals
+
+        remaining_states = all_states[mask]
+        sampled_indices = torch.randint(low=0, high=len(remaining_states), size=(n,))
+        return remaining_states[sampled_indices]
 
     def step_fn(
         self,

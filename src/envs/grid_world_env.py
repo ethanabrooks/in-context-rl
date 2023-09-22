@@ -10,8 +10,8 @@ from envs.grid_world import GridWorld
 class Env(GridWorld, Env):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, n_tasks=1, **kwargs)
-        self.t = None
         self.current_state = None
+        self.t = None
 
     @property
     def action_space(self):

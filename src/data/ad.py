@@ -27,6 +27,7 @@ class Data(data.base.Data):
         dense_reward: bool,
         grid_size: int,
         grid_world_args: dict,
+        heldout_tasks: list[tuple[int, int]],
         include_goal: bool,
         mask_nonactions: bool,
         n_data: int,
@@ -37,6 +38,7 @@ class Data(data.base.Data):
     ):
         self.dense_reward = dense_reward
         self.grid_size = grid_size
+        self.heldout_goals = heldout_tasks
         self.n_data = n_data
         self.n_episodes = n_episodes
         self.steps_per_context = steps_per_context
@@ -49,7 +51,9 @@ class Data(data.base.Data):
             episode_length=self.episode_length,
             **grid_world_args,
             grid_size=grid_size,
+            heldout_goals=heldout_tasks,
             n_tasks=n_data,
+            use_heldout_goals=False,
         )
         self._include_goal = include_goal
 
@@ -145,12 +149,14 @@ class Data(data.base.Data):
         else:
             return 1
 
-    def build_env(self, seed: int):
+    def build_env(self, seed: int, use_heldout_tasks: bool):
         return Env(
             dense_reward=self.dense_reward,
             episode_length=self.episode_length,
             grid_size=self.grid_size,
+            heldout_goals=self.heldout_goals,
             seed=seed,
+            use_heldout_goals=use_heldout_tasks,
         )
 
     def cat_sequence(self, step: Step):

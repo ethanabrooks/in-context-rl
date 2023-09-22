@@ -44,9 +44,21 @@ def get_metric(
 
 
 class Evaluator:
-    def evaluate(self, dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
+    def evaluate(
+        self,
+        dataset: Data,
+        dummy_vec_env: bool,
+        n_rollouts: int,
+        use_heldout_tasks: bool,
+        **kwargs
+    ):
         N = n_rollouts
-        env_fns = [functools.partial(dataset.build_env, seed=i) for i in range(N)]
+        env_fns = [
+            functools.partial(
+                dataset.build_env, seed=i, use_heldout_tasks=use_heldout_tasks
+            )
+            for i in range(N)
+        ]
         envs: SubprocVecEnv
         envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
         task = torch.tensor(envs.get_task()).cuda()
