@@ -69,8 +69,8 @@ def train(
     evaluate_args: dict,
     grad_norm_clip: float,
     load_path: Optional[str],
-    log_freq: int,
-    log_tables_freq: int,
+    log_interval: int,
+    log_tables_interval: int,
     lr: float,
     metrics_args: dict,
     model_args: dict,
@@ -78,10 +78,10 @@ def train(
     n_epochs: int,
     optimizer_config: dict,
     run: Optional[Run],
-    save_freq: int,
+    save_interval: int,
     seed: int,
-    test_ad_freq: int,
-    test_adpp_freq: int,
+    test_ad_interval: int,
+    test_adpp_interval: int,
     weights_args: dict,
 ) -> None:
     set_seed(seed)
@@ -139,13 +139,13 @@ def train(
                 logits=logits, mask=mask, sequence=sequence, **metrics_args
             )
             counter.update(dict(**log, loss=loss.item()))
-            if t % log_freq == 0:
-                log = {k: v / log_freq for k, v in counter.items()}
+            if t % log_interval == 0:
+                log = {k: v / log_interval for k, v in counter.items()}
                 log.update(
                     epoch=e,
                     lr=decayed_lr,
                     save_count=save_count,
-                    time=(time.time() - tick) / log_freq,
+                    time=(time.time() - tick) / log_interval,
                 )
                 counter = Counter()
                 tick = time.time()
@@ -153,8 +153,11 @@ def train(
                 log = {f"train/{k}": v for k, v in log.items()}
 
                 # test
-                log_t = t // log_freq
-                if test_adpp_freq is not None and log_t % test_adpp_freq == 0:
+                log_t = t // log_interval
+                if (
+                    test_adpp_interval is not None
+                    and (1 + log_t) % test_adpp_interval == 0
+                ):
                     adpp_log, fig = evaluate(
                         dataset=dataset,
                         evaluator=evaluators.adpp.Evaluator(**adpp_args),
@@ -164,7 +167,7 @@ def train(
                     )
                     log.update(fig)
                     log_table.print_header(row)
-                if log_t % test_ad_freq == 0:
+                if log_t % test_ad_interval == 0:
                     ad_log, fig = evaluate(
                         dataset=dataset,
                         evaluator=evaluators.ad.Evaluator(),
@@ -178,7 +181,7 @@ def train(
                 log.update(adpp_log)
                 log.update(ad_log)
 
-                if log_t % log_tables_freq == 0:
+                if log_t % log_tables_interval == 0:
 
                     def get_figures():
                         for name, xs in tables.items():
@@ -192,7 +195,7 @@ def train(
                 log_table.print_row(row)
 
             # save
-            if t % save_freq == 0:
+            if t % save_interval == 0:
                 save(run, net)
                 save_count += 1
 
