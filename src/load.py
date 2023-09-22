@@ -80,10 +80,12 @@ def log(
 def no_log(
     load_path: str,
     algo: str = "AD++",
+    dummy_vec_env: bool = False,
 ):
-    loaded_config = wandb.Api().run(load_path).config
-    loaded_config.update(algo=algo, load_path=load_path)
-    return main(**loaded_config, run=None)
+    config = wandb.Api().run(load_path).config
+    config.update(algo=algo, load_path=load_path)
+    config["evaluate_args"].update(dummy_vec_env=dummy_vec_env)
+    return main(**config, run=None)
 
 
 if __name__ == "__main__":
