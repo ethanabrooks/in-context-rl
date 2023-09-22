@@ -64,15 +64,17 @@ def plot_rollout(rollout: np.ndarray):
         yi += np.random.rand() / 10
         ax.text(xi, yi, str(i), fontsize=12)
 
+    # Create a colormap and normalize rewards for colormap
+    cmap = plt.cm.jet
+    norm = plt.Normalize(vmin=min(rewards), vmax=max(rewards))
+
     # Draw arrows based on the deltas
     for action, reward, xi, yi in itertools.zip_longest(actions, rewards, x, y):
         if action is not None:
             if reward is None:
                 color = "black"
-            elif reward > 0:
-                color = "orange"
             else:
-                color = "blue"
+                color = cmap(norm(reward))
             ax.arrow(
                 xi,
                 yi,
@@ -84,6 +86,7 @@ def plot_rollout(rollout: np.ndarray):
             )
 
     plt.grid(True)
+    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="Reward")
     plt.savefig("rollout.png")
 
 
