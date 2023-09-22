@@ -1,0 +1,3 @@
+data_args:
+  dense_reward: true
+  grid_size: 2

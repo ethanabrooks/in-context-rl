@@ -34,9 +34,13 @@ class Env(GridWorld, Env):
         [s] = self.current_state
         self.t = 0
         distance = torch.abs(self.get_task() - s).sum()
-        self.optimal = (
-            [0.0] * distance + [1.0] + [0.0] * (self.episode_length - distance - 1)
-        )
+        if self.dense_reward:
+            descending = list(range(-distance, 0))
+            self.optimal = descending + [0.0] * (self.episode_length - distance)
+        else:
+            self.optimal = (
+                [0.0] * distance + [1.0] + [0.0] * (self.episode_length - distance - 1)
+            )
         return s
 
     def step(self, action: Union[torch.Tensor, int]):

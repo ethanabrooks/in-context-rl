@@ -2,6 +2,7 @@ adpp_args:
   n_actions: 5
 data_args:
   alpha: 0.5
+  dense_reward: false
   grid_world_args:
     atol: 0.2
     gamma: 0.99

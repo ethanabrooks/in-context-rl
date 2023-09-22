@@ -1,0 +1,5 @@
+data_args:
+  dense_reward: true
+  grid_size: 2
+  include_goal: true
+data_path: data/ed

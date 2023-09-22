@@ -6,9 +6,17 @@ from tqdm import tqdm
 
 
 class GridWorld:
-    def __init__(self, episode_length: int, grid_size: int, n_tasks: int, seed: int):
+    def __init__(
+        self,
+        dense_reward: bool,
+        episode_length: int,
+        grid_size: int,
+        n_tasks: int,
+        seed: int,
+    ):
         super().__init__()
         self.random = np.random.default_rng(seed)
+        self.dense_reward = dense_reward
         self.episode_length = episode_length
         self.grid_size = grid_size
         self.states = torch.tensor(
@@ -37,7 +45,11 @@ class GridWorld:
         padding = (0, 0, 0, 1)  # left 0, right 0, top 0, bottom 1
         S_ = F.pad(S_, padding, value=absorbing_state_idx)
         self.T = F.one_hot(S_, num_classes=self.n_states).float()
-        R = is_goal.float()[..., None].tile(1, 1, len(self.deltas))
+        if dense_reward:
+            distance = (self.goals[:, None] - self.states[None]).abs().sum(-1)
+            R = -distance.float()[..., None].tile(1, 1, len(self.deltas))
+        else:
+            R = is_goal.float()[..., None].tile(1, 1, len(self.deltas))
         self.R = F.pad(R, padding, value=0)  # Insert row for absorbing state
 
     def check_actions(self, actions: torch.Tensor):

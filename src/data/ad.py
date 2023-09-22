@@ -24,6 +24,7 @@ class Data(data.base.Data):
     def __init__(
         self,
         alpha: float,
+        dense_reward: bool,
         grid_size: int,
         grid_world_args: dict,
         include_goal: bool,
@@ -34,6 +35,7 @@ class Data(data.base.Data):
         value_iteration_args: dict,
         yield_every: int,
     ):
+        self.dense_reward = dense_reward
         self.grid_size = grid_size
         self.n_data = n_data
         self.n_episodes = n_episodes
@@ -43,6 +45,7 @@ class Data(data.base.Data):
 
         grid_world = ValueIteration(
             alpha=alpha,
+            dense_reward=dense_reward,
             episode_length=self.episode_length,
             **grid_world_args,
             grid_size=grid_size,
@@ -137,11 +140,17 @@ class Data(data.base.Data):
 
     @property
     def max_regret(self):
-        return 1
+        if self.dense_reward:
+            return sum(range(self.episode_length))
+        else:
+            return 1
 
     def build_env(self, seed: int):
         return Env(
-            grid_size=self.grid_size, episode_length=self.episode_length, seed=seed
+            dense_reward=self.dense_reward,
+            episode_length=self.episode_length,
+            grid_size=self.grid_size,
+            seed=seed,
         )
 
     def cat_sequence(self, step: Step):
