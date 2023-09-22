@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 import data.base
 from data.base import Step
+from encoder import OffsetEncoder
 from envs.grid_world_env import Env
 from envs.value_iteration import ValueIteration
 from pretty import console
@@ -97,6 +98,7 @@ class Data(data.base.Data):
         pad_value = self.unpadded_data.max().item() + 1
         self.data = F.pad(data, (0, 0, steps_per_context, 0), value=pad_value)
         self.mask = F.pad(mask, (0, 0, steps_per_context, 0), value=0)
+        self.min_value = self.data.min().item()
 
     def __getitem__(self, idx):
         i, j = self.index_1d_to_2d(idx)
@@ -115,6 +117,10 @@ class Data(data.base.Data):
         _, _, goal_dim = self.tasks.shape
         _, _, obs_dim = self.observations.shape
         return Step(tasks=goal_dim, observations=obs_dim, actions=1, rewards=1)
+
+    @property
+    def encoder(self):
+        return OffsetEncoder(self.min_value)
 
     @property
     def episode_length(self):
@@ -187,7 +193,9 @@ class Data(data.base.Data):
         assert seq_len == seq_len2 + 1
 
         prefix = sequence[:, :1]
-        preds = torch.cat([prefix, logits.argmax(-1)], dim=1)
+        preds = logits.argmax(-1)
+        preds = self.encoder.decode(preds)
+        preds = torch.cat([prefix, preds], dim=1)
         tgts = sequence
         split_preds = self.split_sequence(preds)
         split_tgts = self.split_sequence(tgts)

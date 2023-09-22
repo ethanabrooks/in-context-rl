@@ -1,6 +1,29 @@
 import math
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 import torch
+
+
+class Encoder(ABC):
+    @abstractmethod
+    def decode(self, data: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def encode(self, data: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError()
+
+
+@dataclass
+class OffsetEncoder(Encoder):
+    min_value: float
+
+    def decode(self, data: torch.Tensor) -> torch.Tensor:
+        return data + self.min_value
+
+    def encode(self, data: torch.Tensor) -> torch.Tensor:
+        return data - self.min_value
 
 
 def encode(tensor: torch.Tensor, n_bins: int):

@@ -33,7 +33,12 @@ def main(
 
     dataset = data.make(data_path, **data_args)
     print("Create net... ", end="", flush=True)
-    net = GPT(n_tokens=dataset.n_tokens, step_dim=dataset.step_dim, **model_args)
+    net = GPT(
+        encoder=dataset.encoder,
+        n_tokens=dataset.n_tokens,
+        step_dim=dataset.step_dim,
+        **model_args,
+    )
     if load_path is not None:
         load(load_path, net, run)
     net = net.cuda()

@@ -145,7 +145,6 @@ class Rollout:
         dataset = self.dataset
         net = self.net
         N = self.n_rollouts
-        K = dataset.n_tokens + 1
         S = dataset.step_dim
         W = self.dataset.context_size
 
@@ -171,9 +170,7 @@ class Rollout:
         assert torch.all(history[:, index_history] == pad_value)
 
         # sample probs
-        probs = logits[:, index_logits].softmax(dim=-1)
-        assert [*probs.shape] == [N, K]
-        [prediction] = torch.multinomial(probs, num_samples=1).T
+        [prediction] = self.net.predict(logits[:, index_logits]).T
         history[:, index_history] = prediction
         return prediction
 

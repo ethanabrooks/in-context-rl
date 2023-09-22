@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from encoder import Encoder
+
 
 class EinLinear(nn.Module):
     def __init__(self, n_models, in_features, out_features, bias):
@@ -137,6 +139,7 @@ class TransformerLayer(nn.Module):
 class GPT(nn.Module):
     def __init__(
         self,
+        encoder: Encoder,
         embd_pdrop: float,
         layer_args: dict,
         n_embd: int,
@@ -146,6 +149,7 @@ class GPT(nn.Module):
         steps_per_context: int,
     ):
         super().__init__()
+        self.encoder = encoder
         context_size = steps_per_context * step_dim - 1
 
         # input embedding stem (+1 for stop token)
@@ -231,6 +235,8 @@ class GPT(nn.Module):
         inputs = sequence[:, :-1].contiguous()
         targets = sequence[:, 1:].contiguous()
 
+        inputs = self.encoder.encode(inputs)
+
         b, t = inputs.size()
         assert t <= self._context_size, "Cannot forward, model block size is exhausted."
 
@@ -275,3 +281,8 @@ class GPT(nn.Module):
                 loss = (loss * mask.view(-1)).mean()
 
         return logits, loss
+
+    def predict(self, logits: torch.Tensor) -> torch.Tensor:
+        probs = logits.softmax(dim=-1)
+        prediction = torch.multinomial(probs, num_samples=1)
+        return self.encoder.decode(prediction)

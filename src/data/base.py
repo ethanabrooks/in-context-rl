@@ -6,6 +6,7 @@ from typing import Generic, TypeVar
 import torch
 from torch.utils.data import Dataset
 
+from encoder import Encoder
 from envs.base import Env
 
 T = TypeVar("T")
@@ -32,6 +33,11 @@ class Data(Dataset, ABC):
 
     @property
     @abstractmethod
+    def encoder(self) -> Encoder:
+        pass
+
+    @property
+    @abstractmethod
     def episode_length(self) -> int:
         pass
 
@@ -48,7 +54,7 @@ class Data(Dataset, ABC):
     @property
     @lru_cache
     def n_tokens(self):
-        return 1 + self.data.max().round().long().item()
+        return 1 + self.encoder.encode(self.data).max().round().long().item()
 
     @property
     @lru_cache
