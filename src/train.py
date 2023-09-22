@@ -6,6 +6,7 @@ from typing import Optional
 
 import pandas as pd
 import torch
+from matplotlib import pyplot as plt
 from rich import print
 from torch.utils.data import DataLoader
 from wandb.sdk.wandb_run import Run
@@ -187,6 +188,7 @@ def train(
 
                 if run is not None:
                     wandb.log(log, step=step)
+                plt.close()
                 log_table.print_row(row)
 
             # save
