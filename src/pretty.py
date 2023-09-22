@@ -63,4 +63,4 @@ def render_graph(*numbers: float, max_num: float, width: int = 10, length: int =
         padding = width - len(bar)
         padding = " " * padding
         num = round(num, 1)
-        yield f"{num:<4} {bar}{padding}▏"
+        yield f"{num:<6} {bar}{padding}▏"
