@@ -22,7 +22,7 @@ def plot_accuracy(
     return fig
 
 
-def plot_returns(df: pd.DataFrame, name: str, ymin: float, ymax: float):
+def plot_eval_metrics(df: pd.DataFrame, name: str, ymin: float, ymax: float):
     means = df.groupby("episode").metric.mean()
     sems = df.groupby("episode").metric.sem()
 

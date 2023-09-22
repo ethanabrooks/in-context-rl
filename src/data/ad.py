@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import asdict, astuple, replace
-from functools import lru_cache
 
+import pandas as pd
 import torch
 import torch.nn.functional as F
 
@@ -10,7 +10,8 @@ from data.base import Step
 from encoder import OffsetEncoder
 from envs.grid_world_env import Env
 from envs.value_iteration import ValueIteration
-from pretty import console
+from plot import plot_eval_metrics
+from pretty import console, render_eval_metrics
 
 
 def expand_as(x: torch.Tensor, y: torch.Tensor):
@@ -127,17 +128,16 @@ class Data(data.base.Data):
         return 1 + self.grid_size**2
 
     @property
+    def episodes_per_rollout(self):
+        return self.n_rounds * self.n_episodes
+
+    @property
     def include_goal(self):
         return self._include_goal
 
     @property
-    @lru_cache
-    def return_range(self):
-        return self.rewards.min().item(), self.rewards.max().item()
-
-    @property
-    def episodes_per_rollout(self):
-        return self.n_rounds * self.n_episodes
+    def max_regret(self):
+        return 1
 
     def build_env(self, seed: int):
         return Env(
@@ -166,6 +166,10 @@ class Data(data.base.Data):
             )
             if t % self.yield_every == 0:
                 yield Step(tasks=g, observations=s, actions=a, rewards=r), d
+
+    @property
+    def eval_metric_name(self) -> str:
+        return "regret"
 
     def index_1d_to_2d(self, index):
         row = index // self.steps_per_row
@@ -238,3 +242,11 @@ class Data(data.base.Data):
 
         log = {k: v.float().mean().item() for k, v in acc.items()}
         return log, table
+
+    def plot_eval_metrics(self, df: pd.DataFrame) -> list[str]:
+        return plot_eval_metrics(
+            df, name=self.eval_metric_name, ymin=0, ymax=self.max_regret
+        )
+
+    def render_eval_metrics(self, *metric: float) -> list[str]:
+        return render_eval_metrics(*metric, max_num=self.max_regret)

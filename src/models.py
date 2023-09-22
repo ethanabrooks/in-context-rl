@@ -267,7 +267,7 @@ class GPT(nn.Module):
 
         loss = F.cross_entropy(
             logits.reshape(-1, logits.size(-1)),
-            targets.view(-1),
+            self.encoder.encode(targets).view(-1),
             reduction="none",
         )
 

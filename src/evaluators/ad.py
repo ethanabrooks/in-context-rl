@@ -220,8 +220,8 @@ class Rollout:
                 assert isinstance(d, (bool, np.bool_))
                 assert isinstance(i, dict)
                 if d:
-                    name, x = get_metric(info=i, rewards=er[:et], gamma=self.gamma)
-                    yield dict(n=n, history=h, name=name, episode=ec, metric=x)
+                    _, x = get_metric(info=i, rewards=er[:et], gamma=self.gamma)
+                    yield dict(n=n, history=h, episode=ec, metric=x)
                     episode_count[n] += 1
                     episode_rewards[n] = 0
                     episode_t[n] = 0

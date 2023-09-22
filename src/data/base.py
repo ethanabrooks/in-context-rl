@@ -3,6 +3,7 @@ from dataclasses import asdict, astuple, dataclass
 from functools import lru_cache
 from typing import Generic, TypeVar
 
+import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
@@ -43,12 +44,12 @@ class Data(Dataset, ABC):
 
     @property
     @abstractmethod
-    def include_goal(self) -> bool:
+    def eval_metric_name(self) -> str:
         pass
 
     @property
     @abstractmethod
-    def return_range(self) -> tuple[float, float]:
+    def include_goal(self) -> bool:
         pass
 
     @property
@@ -78,6 +79,14 @@ class Data(Dataset, ABC):
     def get_metrics(
         self, logits: torch.Tensor, sequence: torch.Tensor
     ) -> tuple[dict[str, float], dict[str, list[float]]]:
+        pass
+
+    @abstractmethod
+    def plot_eval_metrics(self, df: pd.DataFrame) -> list[str]:
+        pass
+
+    @abstractmethod
+    def render_eval_metrics(self, *metric: float) -> list[str]:
         pass
 
     @lru_cache

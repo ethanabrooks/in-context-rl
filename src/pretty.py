@@ -45,7 +45,9 @@ class Table:
         console.print(row_str)
 
 
-def render_graph(*numbers: float, max_num: float, width: int = 10, length: int = 10):
+def render_eval_metrics(
+    *numbers: float, max_num: float, width: int = 10, length: int = 10
+):
     if len(numbers) > length:
         subarrays = np.array_split(numbers, length)
         # Compute the mean of each subarray

@@ -17,8 +17,8 @@ import wandb
 from data.base import Data
 from models import GPT
 from optimizer import configure, decay_lr
-from plot import plot_accuracy, plot_returns
-from pretty import Table, render_graph
+from plot import plot_accuracy
+from pretty import Table
 from utils import set_seed
 
 MODEL_FNAME = "model.tar"
@@ -42,23 +42,13 @@ def evaluate(
         list(evaluator.evaluate(dataset=dataset, net=net, **kwargs))
     )
 
-    min_return, max_return = dataset.return_range
-    metrics = df.drop(["history", "name"], axis=1).groupby("episode").mean().metric
-    graph = render_graph(*metrics, max_num=max_return)
+    metrics = df.drop(["history"], axis=1).groupby("episode").mean().metric
+    graph = dataset.render_eval_metrics(*metrics)
     print("\n" + "\n".join(graph), end="\n\n")
-    try:
-        [name] = df.name.unique()
-    except ValueError:
-        raise ValueError("Multiple names in the same rollout")
-    fig = plot_returns(
-        df=df,
-        name=name,
-        ymin=min_return,
-        ymax=max_return,
-    )
+    fig = dataset.plot_eval_metrics(df=df)
     *_, final_metric = metrics
-    metric_log = {f"{section}/final {name}": final_metric}
-    fig_log = {f"{section}/{name}": wandb.Image(fig)}
+    metric_log = {f"{section}/final {dataset.eval_metric_name}": final_metric}
+    fig_log = {f"{section}/{dataset.eval_metric_name}": wandb.Image(fig)}
     return metric_log, fig_log
 
 
