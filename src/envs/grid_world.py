@@ -216,25 +216,31 @@ class GridWorld:
         for i in range(N):
             for j in range(N):
                 center_x = j + 0.5
-                center_y = N - 1 - i + 0.5
-                if policy[N * i + j, 0] == 1:  # move up
-                    dx, dy = 0, 0.4
-                elif policy[N * i + j, 1] == 1:  # move down
-                    dx, dy = 0, -0.4
-                elif policy[N * i + j, 2] == 1:  # move left
-                    dx, dy = -0.4, 0
-                elif policy[N * i + j, 3] == 1:  # move right
-                    dx, dy = 0.4, 0
-                ax.arrow(
-                    center_x - dx / 2,
-                    center_y - dy / 2,
-                    dx,
-                    dy,
-                    head_width=0.2,
-                    head_length=0.2,
-                    fc="blue",
-                    ec="blue",
-                )
+                center_y = i + 0.5
+
+                for action_idx, prob in enumerate(policy[N * i + j]):
+                    if (
+                        prob > 0
+                    ):  # Only draw if there's a non-zero chance of taking the action
+                        if action_idx == 0:  # move up
+                            dx, dy = 0, -0.4
+                        elif action_idx == 1:  # move down
+                            dx, dy = 0, 0.4
+                        elif action_idx == 2:  # move left
+                            dx, dy = -0.4, 0
+                        elif action_idx == 3:  # move right
+                            dx, dy = 0.4, 0
+                        ax.arrow(
+                            center_x - dx / 2,
+                            center_y - dy / 2,
+                            dx,
+                            dy,
+                            head_width=0.2,
+                            head_length=0.2,
+                            fc="blue",
+                            ec="blue",
+                            alpha=prob.item(),  # Set the opacity according to the probability
+                        )
 
         plt.gca().set_aspect("equal", adjustable="box")
         plt.xticks(np.arange(N))
