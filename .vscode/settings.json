@@ -5,5 +5,10 @@
     "python.analysis.extraPaths": [
         "./src"
     ],
-    "python.formatting.provider": "none",
+    "files.watcherExclude": {
+        "**/.direnv/**": true,
+        "**/*{.jpg,.png,.gif,.webp,.jpeg}": true,
+        "**/.git/**": true,
+        "**/wandb/**": true
+    }
 }
