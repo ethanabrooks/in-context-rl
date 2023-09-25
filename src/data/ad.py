@@ -139,7 +139,7 @@ class Data(data.base.Data):
         return self.n_rounds * self.n_episodes
 
     @property
-    def include_goal(self):
+    def include_task(self):
         return self._include_goal
 
     @property

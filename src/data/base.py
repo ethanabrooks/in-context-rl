@@ -49,7 +49,7 @@ class Data(Dataset, ABC):
 
     @property
     @abstractmethod
-    def include_goal(self) -> bool:
+    def include_task(self) -> bool:
         pass
 
     @property

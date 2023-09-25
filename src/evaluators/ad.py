@@ -62,7 +62,7 @@ class Evaluator:
         envs: SubprocVecEnv
         envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
         task = torch.tensor(envs.get_task()).cuda()
-        if not dataset.include_goal:
+        if not dataset.include_task:
             task = torch.zeros_like(task)
         try:
             evaluator = self.make_rollout(
