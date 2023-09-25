@@ -1,8 +1,12 @@
 import shutil
+from contextlib import contextmanager
+from datetime import timedelta
 from typing import Any, Callable, Optional
 
 import numpy as np
 from rich.console import Console
+from rich.progress import Progress, ProgressColumn, Task, TextColumn
+from rich.text import Text
 
 console = Console()
 
@@ -66,3 +70,29 @@ def render_eval_metrics(
         padding = " " * padding
         num = round(num, 1)
         yield f"{num:<6} {bar}{padding}▏"
+
+
+class TimeElapsedColumn(ProgressColumn):
+    """Renders time elapsed."""
+
+    def render(self, task: Task) -> Text:
+        """Show time elapsed."""
+        elapsed = task.finished_time if task.finished else task.elapsed
+        if elapsed is None:
+            return Text("-:--:--", style="progress.elapsed")
+        delta = timedelta(seconds=elapsed)
+        return Text(str(delta), style="progress.elapsed")
+
+
+@contextmanager
+def Timer(desc: Optional[str] = None):
+    columns = [TimeElapsedColumn()]
+    if desc:
+        columns.append(TextColumn(f"[progress.description]{desc}:"))
+    with Progress(*columns) as progress:
+        progress.add_task(desc, total=None)
+        yield
+
+
+# whitelist
+TimeElapsedColumn.render

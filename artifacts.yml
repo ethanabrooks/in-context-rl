@@ -1,0 +1,7 @@
+point_env: "rldl/varibad/PointEnv-v0-AD:v0"
+ant_dir: "rldl/varibad/AntDir2D-v0-multitask-old:None.{0..63}"
+cheetah_vel: "rldl/varibad/HalfCheetahVel-v0-multitask:512.{0..7}"
+sparse_point_env: "rldl/varibad/SparsePointEnv-v0-multitask:v{19,21,22,25,26,28,29,30}"
+cheetah_dir: "rldl/varibad/HalfCheetahDir-v0-multitask:512.{0..7}"
+ant_goal: "rldl/varibad/AntGoal-v0-AD:512.{0..63}"
+walker_rand_params: "rldl/varibad/Walker2DRandParams-v0-expert:None.{0..900}"
