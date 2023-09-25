@@ -30,7 +30,7 @@ class Step(Generic[T]):
 class Data(Dataset, ABC):
     @property
     @abstractmethod
-    def context_size(self) -> int:
+    def sequence_len(self) -> int:
         pass
 
     @property

@@ -122,7 +122,7 @@ class Rollout:
 
     def index(self, time_step: int):
         S = self.dataset.step_dim
-        W = self.dataset.context_size
+        W = self.dataset.sequence_len
         return W + (time_step + 1) * S
 
     def init_history(self):
@@ -151,7 +151,7 @@ class Rollout:
         net = self.net
         N = self.n_rollouts
         S = dataset.step_dim
-        W = self.dataset.context_size
+        W = self.dataset.sequence_len
 
         end = self.index(t)
         start = end - W

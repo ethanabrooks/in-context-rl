@@ -121,10 +121,6 @@ class Data(data.Data):
         return self.n_data * self.steps_per_row
 
     @property
-    def context_size(self):
-        return self.steps_per_context * self.step_dim
-
-    @property
     def dims(self):
         _, _, goal_dim = self.tasks.shape
         _, _, obs_dim = self.observations.shape
@@ -141,6 +137,10 @@ class Data(data.Data):
     @property
     def episodes_per_rollout(self):
         return self.n_rounds * self.n_episodes
+
+    @property
+    def eval_metric_name(self) -> str:
+        return "regret"
 
     @property
     def include_task(self):
@@ -162,6 +162,10 @@ class Data(data.Data):
     @lru_cache
     def pad_value(self):
         return self.data.max().round().long().item()
+
+    @property
+    def sequence_len(self):
+        return self.steps_per_context * self.step_dim
 
     def build_env(self, seed: int, use_heldout_tasks: bool):
         return Env(
@@ -195,10 +199,6 @@ class Data(data.Data):
             )
             if t % self.yield_every == 0:
                 yield Step(tasks=g, observations=s, actions=a, rewards=r), d
-
-    @property
-    def eval_metric_name(self) -> str:
-        return "regret"
 
     def index_1d_to_2d(self, index):
         row = index // self.steps_per_row

@@ -261,10 +261,6 @@ class Data(data.Data):
         return len(self.unpadded_data)
 
     @property
-    def context_size(self):
-        return self.steps_per_context * self.step_dim
-
-    @property
     def dims(self):
         _, goal_dim = self.tasks.shape
         _, obs_dim = self.observations.shape
@@ -316,6 +312,10 @@ class Data(data.Data):
     @lru_cache
     def pad_value(self):
         return self.unpadded_data.max() + 1
+
+    @property
+    def sequence_len(self):
+        return self.steps_per_context * self.step_dim
 
     def build_env(
         self,
