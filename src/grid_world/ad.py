@@ -5,11 +5,11 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
-import data.base
-from data.base import Step
+import data
+from data import Step
 from encoder import OffsetEncoder
-from envs.grid_world_env import Env
-from envs.value_iteration import ValueIteration
+from grid_world.grid_world_env import Env
+from grid_world.value_iteration import ValueIteration
 from plot import plot_eval_metrics
 from pretty import console, render_eval_metrics
 
@@ -20,7 +20,7 @@ def expand_as(x: torch.Tensor, y: torch.Tensor):
     return x.expand_as(y)
 
 
-class Data(data.base.Data):
+class Data(data.Data):
     def __init__(
         self,
         alpha: float,

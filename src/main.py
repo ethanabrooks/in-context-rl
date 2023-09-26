@@ -44,12 +44,12 @@ def check_alphabetical_order(d: DictConfig, name: str):
         exit(1)
 
 
-def get_config(config_name):
-    root = Path("configs")
-    config_path = root / f"{config_name}.yml"
+def get_config(config_path: str):
+    config_path: Path = Path("configs") / config_path
+    config_path = config_path.with_suffix(".yml")
     config = OmegaConf.load(config_path)
     check_alphabetical_order(config, str(config_path))
-    base_config_path = root / "base.yml"
+    base_config_path = config_path.with_name("base.yml")
     base_config = OmegaConf.load(base_config_path)
     check_alphabetical_order(base_config, str(base_config_path))
     merged = OmegaConf.merge(base_config, config)
@@ -81,7 +81,7 @@ def get_relative_git_rev(target_commit: str):
     return f"{str(target_commit)[:7]}~{num_commits}"
 
 
-parsers = dict(config=option("config", default="ad5x5"))
+parsers = dict(config=option("config", default="grid_world/ad5x5"))
 
 
 @tree.subcommand(parsers=dict(name=argument("name"), **parsers))

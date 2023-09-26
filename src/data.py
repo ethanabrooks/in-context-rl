@@ -1,7 +1,9 @@
+import importlib
 from abc import ABC, abstractmethod
 from dataclasses import asdict, astuple, dataclass
 from functools import lru_cache
-from typing import Generic, TypeVar
+from pathlib import Path
+from typing import Generic, TypeVar, Union
 
 import pandas as pd
 import torch
@@ -97,3 +99,11 @@ class Data(Dataset, ABC):
             assert k in sequence, f"Invalid key {k}"
             sequence[k] *= v
         return self.cat_sequence(Step(**sequence)).cuda()
+
+
+def make(path: Union[str, Path], *args, **kwargs) -> Data:
+    path = Path(path)
+    name = path.stem
+    name = ".".join(path.parts)
+    module = importlib.import_module(name)
+    return module.Data(*args, **kwargs)

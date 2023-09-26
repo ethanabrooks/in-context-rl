@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from matplotlib import pyplot as plt
 
-from envs.grid_world import GridWorld
+from grid_world.grid_world import GridWorld
 
 
 class ValueIteration(GridWorld):

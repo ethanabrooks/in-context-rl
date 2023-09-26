@@ -1,10 +1,10 @@
-import data.ad
-from data.base import Step
-from envs.value_iteration import ValueIteration
+import grid_world.ad
+from data import Step
+from grid_world.value_iteration import ValueIteration
 from pretty import console
 
 
-class Data(data.ad.Data):
+class Data(grid_world.ad.Data):
     def collect_data(self, grid_world: ValueIteration, **kwargs):
         console.log("Value iteration...")
         for t, (V, Pi) in enumerate(

@@ -15,12 +15,12 @@ import data
 import evaluators.ad
 import evaluators.adpp
 import wandb
-from data.base import Data
+from data import Data
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy
 from pretty import Table
-from utils import set_seed
+from seeding import set_seed
 
 MODEL_FNAME = "model.tar"
 

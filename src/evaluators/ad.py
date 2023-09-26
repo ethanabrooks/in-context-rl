@@ -6,7 +6,7 @@ import torch
 from gym.spaces import Discrete, MultiDiscrete, Space
 from tqdm import tqdm
 
-from data.base import Data, Step
+from data import Data, Step
 from envs.parallel.dummy_vec_env import DummyVecEnv
 from envs.parallel.subproc_vec_env import SubprocVecEnv
 from models import GPT

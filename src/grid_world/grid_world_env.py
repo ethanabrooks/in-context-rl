@@ -4,7 +4,7 @@ import torch
 from gym.spaces import Discrete, MultiDiscrete
 
 from envs.base import Env
-from envs.grid_world import GridWorld
+from grid_world.grid_world import GridWorld
 
 
 class Env(GridWorld, Env):
