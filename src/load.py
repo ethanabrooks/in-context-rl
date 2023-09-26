@@ -11,8 +11,8 @@ import evaluators.adpp
 import wandb
 from main import check_dirty, get_project_name
 from models import GPT
+from seeding import set_seed
 from train import evaluate, load
-from utils import set_seed
 
 tree = CommandTree()
 
@@ -87,9 +87,11 @@ def no_log(
     algo: str = "AD++",
     dummy_vec_env: bool = False,
 ):
-    config = wandb.Api().run(load_path).config
+    config: dict = wandb.Api().run(load_path).config
     config.update(algo=algo, load_path=load_path)
-    config["evaluate_args"].update(dummy_vec_env=dummy_vec_env)
+    evaluator_args = config["evaluate_args"]
+    assert isinstance(evaluator_args, dict)
+    evaluator_args.update(dummy_vec_env=dummy_vec_env)
     return main(**config, run=None)
 
 
