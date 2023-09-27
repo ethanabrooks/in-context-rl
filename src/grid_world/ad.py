@@ -146,7 +146,7 @@ class Data(data.Data):
     @property
     def max_regret(self):
         if self.dense_reward:
-            return 2 * self.grid_size * self.episode_length
+            return 20 * self.grid_size
         else:
             return 1
 
