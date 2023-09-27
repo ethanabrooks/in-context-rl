@@ -3,10 +3,9 @@ adpp_args:
 data_args:
   decimals: 2
   episodes_per_rollout: 5
-  expert_distillation: false
   include_task: true
   steps_per_context: 100
-data_path: point_env/data
+data_path: point_env/learned
 decay_args:
   final: 100_000
   warmup: 1000

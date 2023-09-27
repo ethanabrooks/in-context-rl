@@ -116,14 +116,7 @@ class Data(data.Data):
         self._episodes_per_rollout = episodes_per_rollout
         self._include_task = include_task
         self.steps_per_context = steps_per_context
-        data_dir = Path(os.getenv("DATA_DIR"))
-        assert data_dir.exists()
-
-        artifacts = OmegaConf.load("artifacts.yml")
-        load_path = data_dir / replay_buffer.DIR / artifacts.point_env
-        assert valid_checksum(data_dir, load_path)
-
-        components = replay_buffer.load(load_path)
+        components = self.get_data()
 
         def ends_to_starts(ends: np.ndarray):
             return np.concatenate([[0], ends[:-1] + 1])
@@ -273,23 +266,43 @@ class Data(data.Data):
     def pad_value(self):
         return self.unpadded_data.max() + 1
 
-    def build_env(self, seed: int, use_heldout_tasks: bool):
-        returns = [np.sum(episode_rewards) for episode_rewards in self.episode_rewards]
-        # Get the index of the episode with the best return
-        best_index = np.argmax(returns)
-        env = PointEnv(
-            goal_sampler="circle",
-            optimal=self.episode_rewards[best_index].flatten(),
-            test=use_heldout_tasks,
-        )
+    def build_env(
+        self,
+        seed: int,
+        use_heldout_tasks: bool,
+        include_optimal: bool = True,
+        max_episode_steps: Optional[int] = None,
+    ):
+        if include_optimal:
+            returns = [
+                np.sum(episode_rewards) for episode_rewards in self.episode_rewards
+            ]
+            # Get the index of the episode with the best return
+            best_index = np.argmax(returns)
+            optimal = self.episode_rewards[best_index].flatten()
+        else:
+            optimal = None
+        env = PointEnv(goal_sampler="circle", optimal=optimal, test=use_heldout_tasks)
         env.seed(seed)
-        env = TimeLimit(env, max_episode_steps=self.episode_length)
+        if max_episode_steps is None:
+            max_episode_steps = self.episode_length
+        env = TimeLimit(env, max_episode_steps=max_episode_steps)
         return env
 
     def cat_sequence(self, step: Step[torch.Tensor]):
         data = torch.cat(astuple(step), dim=-1)
         n_data, *_ = data.shape
         return data.long().view(n_data, -1)
+
+    def get_data(self):
+        data_dir = Path(os.getenv("DATA_DIR"))
+        assert data_dir.exists()
+
+        artifacts = OmegaConf.load("artifacts.yml")
+        load_path = data_dir / replay_buffer.DIR / artifacts.point_env
+        assert valid_checksum(data_dir, load_path)
+
+        return replay_buffer.load(load_path)
 
     def split_sequence(self, sequence: torch.Tensor):
         n_batch, _ = sequence.shape

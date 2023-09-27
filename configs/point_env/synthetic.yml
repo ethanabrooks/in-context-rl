@@ -1,0 +1,5 @@
+data_args:
+  max_steps: 20
+  n_histories: 5000
+data_path: point_env/synthetic
+n_epochs: 200
