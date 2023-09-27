@@ -41,7 +41,7 @@ class Env(GridWorld, Env):
             self.optimal = (
                 [0.0] * distance + [1.0] + [0.0] * (self.episode_length - distance - 1)
             )
-        return s
+        return s.numpy()
 
     def step(self, action: Union[torch.Tensor, int]):
         if isinstance(action, int):
@@ -52,4 +52,4 @@ class Env(GridWorld, Env):
         self.t += 1
         if d:
             i.update(optimal=self.optimal)
-        return s, r, d, i
+        return s.numpy(), r, d, i

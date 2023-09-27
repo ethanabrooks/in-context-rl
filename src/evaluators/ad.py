@@ -3,7 +3,7 @@ from dataclasses import asdict, astuple, dataclass
 
 import numpy as np
 import torch
-from gym.spaces import Discrete, MultiDiscrete, Space
+from gym.spaces import Box, Discrete, MultiDiscrete, Space
 from tqdm import tqdm
 
 from data import Data, Step
@@ -24,6 +24,10 @@ def clamp(action: torch.Tensor, space: Space):
         return torch.clamp(action, min=0, max=space.n - 1)
     elif isinstance(space, MultiDiscrete):
         return torch.clamp(action, min=0, max=space.nvec - 1)
+    elif isinstance(space, Box):
+        low = torch.tensor(space.low).cuda()
+        high = torch.tensor(space.high).cuda()
+        return torch.clamp(action, min=low, max=high)
     else:
         raise NotImplementedError
 
@@ -139,7 +143,7 @@ class Rollout:
         history = torch.full(
             (N, self.index(T)),
             self.dataset.pad_value,
-            dtype=torch.long,
+            dtype=torch.float,
             device="cuda",
         )
         start = self.index(-1)
@@ -193,7 +197,7 @@ class Rollout:
         observation = self.envs.reset(n)
         start = self.index(t)
         i, j = start + self.idxs.observations
-        history[n, i:j] = observation.cuda()
+        history[n, i:j] = torch.tensor(observation).cuda()
 
     def rollout(self):
         A = self.dataset.dims.actions

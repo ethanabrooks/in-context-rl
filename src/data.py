@@ -55,14 +55,14 @@ class Data(Dataset, ABC):
         pass
 
     @property
-    @lru_cache
+    @abstractmethod
     def n_tokens(self):
-        return 1 + self.encoder.encode(self.data).max().round().long().item()
+        pass
 
     @property
-    @lru_cache
+    @abstractmethod
     def pad_value(self):
-        return self.data.max().round().long().item()
+        pass
 
     @property
     @abstractmethod

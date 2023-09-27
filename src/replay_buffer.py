@@ -80,6 +80,7 @@ def load(directory: Path) -> np.ndarray:
 
 def compute_directory_checksum(dir_path: Path):
     """Compute a checksum for a directory and all its contents."""
+    assert dir_path.exists()
     sha256_hash = hashlib.sha256()
 
     # Walk the directory and hash each file's contents

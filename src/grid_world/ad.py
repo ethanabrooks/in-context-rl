@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import asdict, astuple, replace
+from functools import lru_cache
 
 import pandas as pd
 import torch
@@ -7,8 +8,8 @@ import torch.nn.functional as F
 
 import data
 from data import Step
-from encoder import OffsetEncoder
-from grid_world.grid_world_env import Env
+from encoder import LongEncoder, MultiEncoder, OffsetEncoder
+from grid_world.env import Env
 from grid_world.value_iteration import ValueIteration
 from plot import plot_eval_metrics
 from pretty import console, render_eval_metrics
@@ -128,7 +129,7 @@ class Data(data.Data):
 
     @property
     def encoder(self):
-        return OffsetEncoder(self.min_value)
+        return MultiEncoder(OffsetEncoder(self.min_value), LongEncoder())
 
     @property
     def episode_length(self):
@@ -148,6 +149,16 @@ class Data(data.Data):
             return 2 * self.grid_size * self.episode_length
         else:
             return 1
+
+    @property
+    @lru_cache
+    def n_tokens(self):
+        return 1 + self.encoder.encode(self.data).max().round().long().item()
+
+    @property
+    @lru_cache
+    def pad_value(self):
+        return self.data.max().round().long().item()
 
     def build_env(self, seed: int, use_heldout_tasks: bool):
         return Env(

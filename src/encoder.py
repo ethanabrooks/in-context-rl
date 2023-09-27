@@ -26,7 +26,49 @@ class OffsetEncoder(Encoder):
         return data - self.min_value
 
 
-def encode(tensor: torch.Tensor, n_bins: int):
+class ContiguousEncoder(Encoder):
+    def __init__(self, data: torch.Tensor, decimals: int):
+        self.multiply_by = 10**decimals
+        unique = torch.unique(self.to_long(data))
+        self.bins, _ = torch.sort(unique)
+        assert isinstance(self.bins, torch.Tensor)
+        self.bins = self.bins.cuda()
+
+    def to_long(self, data: torch.Tensor) -> torch.Tensor:
+        data = data * self.multiply_by
+        return data.round().long()
+
+    def decode(self, data: torch.Tensor) -> torch.Tensor:
+        return self.bins[data] / self.multiply_by
+
+    def encode(self, data: torch.Tensor) -> torch.Tensor:
+        return torch.searchsorted(self.bins, self.to_long(data))
+
+
+class LongEncoder(Encoder):
+    def decode(self, data: torch.Tensor) -> torch.Tensor:
+        return data.float()
+
+    def encode(self, data: torch.Tensor) -> torch.Tensor:
+        return data.long()
+
+
+class MultiEncoder(Encoder):
+    def __init__(self, *encoders: Encoder):
+        self.encoders = encoders
+
+    def decode(self, data: torch.Tensor) -> torch.Tensor:
+        for encoder in self.encoders:
+            data = encoder.decode(data)
+        return data
+
+    def encode(self, data: torch.Tensor) -> torch.Tensor:
+        for encoder in self.encoders:
+            data = encoder.encode(data)
+        return data
+
+
+def quantize(tensor: torch.Tensor, n_bins: int):
     # Flatten tensor
     flat_tensor = tensor.flatten()
 
@@ -55,14 +97,14 @@ def encode(tensor: torch.Tensor, n_bins: int):
 
 
 def check(x: torch.Tensor, n_bins: int):
-    y, centroids, _ = encode(x, n_bins)
+    y, centroids, _ = quantize(x, n_bins)
     z = centroids[y]
     diffs = (x - z).abs()
     return diffs.mean().item(), diffs.max().item()
 
 
 if __name__ == "__main__":
-    from utils import set_seed
+    from seeding import set_seed
 
     set_seed(0)
 

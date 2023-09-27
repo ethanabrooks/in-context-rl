@@ -119,3 +119,7 @@ class ValueIteration(GridWorld):
 
         plt.tight_layout()
         plt.savefig(f"values{task_idx}.png")
+
+
+# whitelist:
+ValueIteration.visualize_values
