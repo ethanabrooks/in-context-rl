@@ -67,11 +67,13 @@ class Evaluator:
         envs: SubprocVecEnv
         envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
         task = torch.tensor(envs.get_task()).cuda()
-        if not dataset.include_task:
-            task = torch.zeros_like(task)
         try:
             evaluator = self.make_rollout(
-                dataset=dataset, envs=envs, n_rollouts=n_rollouts, **kwargs, task=task
+                dataset=dataset,
+                envs=envs,
+                **kwargs,
+                n_rollouts=n_rollouts,
+                raw_task=task
             )
             yield from evaluator.rollout()
         finally:
@@ -108,7 +110,7 @@ class Rollout:
     gamma: float
     n_rollouts: int
     net: GPT
-    task: torch.Tensor
+    raw_task: torch.Tensor
 
     @property
     def episode_length(self):
@@ -117,6 +119,12 @@ class Rollout:
     @property
     def episodes_per_rollout(self):
         return self.dataset.episodes_per_rollout
+
+    @property
+    def task(self):
+        if self.dataset.include_task:
+            return self.raw_task
+        return torch.zeros_like(self.raw_task)
 
     def get_action(self, history: torch.Tensor, t: int, episode_t: int) -> torch.Tensor:
         action = self.predict_many(history, t, *self.idxs.actions)
@@ -210,7 +218,6 @@ class Rollout:
         actions = np.zeros((T, N, A))
         observations = np.zeros((T, N, O))
         rewards = np.zeros((T, N))
-        tasks = self.task[None].repeat(T, 1, 1).cpu().numpy()
         terminations = np.zeros((T, N), dtype=int)
         episode_timesteps = np.zeros(N, dtype=int)
         history = self.init_history()
@@ -246,9 +253,9 @@ class Rollout:
                         states=observations[t0:t1, n],
                         actions=actions[t0:t1, n],
                         rewards=rewards[t0:t1, n],
-                        tasks=tasks[t0:t1, n],
                         episode=episode_count[n],
                         metric=x,
+                        task=self.raw_task[n].cpu().numpy(),
                     )
                     episode_count[n] += 1
                     episode_timesteps[n] = 0

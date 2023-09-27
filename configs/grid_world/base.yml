@@ -27,6 +27,7 @@ evaluate_adpp_args:
 evaluate_args:
   dummy_vec_env: false
   gamma: ${data_args.grid_world_args.gamma}
+  n_plots: 3
   n_rollouts: 10
 grad_norm_clip: 1.0
 load_path: null

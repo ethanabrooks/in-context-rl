@@ -2,9 +2,12 @@ from collections import defaultdict
 from dataclasses import asdict, astuple, replace
 from functools import lru_cache
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from scipy.interpolate import CubicSpline
 
 import data
 from data import Step
@@ -273,6 +276,77 @@ class Data(data.Data):
         return plot_eval_metrics(
             df, name=self.eval_metric_name, ymin=0, ymax=self.max_regret
         )
+
+    def plot_rollout(
+        self,
+        task: np.ndarray,
+        states: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+    ):
+        deltas = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]])
+
+        x, y = states.T
+
+        # Using indices as the parameter
+        t = np.arange(len(x))
+
+        # Create splines for x(t) and y(t)
+        sx = CubicSpline(t, x)
+        sy = CubicSpline(t, y)
+
+        # Generate new t values
+        tnew = np.linspace(0, len(x) - 1, 300)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(sx(tnew), sy(tnew), "r-", label="Smoothed curve")
+        ax.plot(x, y, "bo", label="Original points")
+
+        # Mark start (now the second state) and end of the trajectory
+        plt.scatter(states[0, 0], states[0, 1], c="g", marker="^", s=150, label="Start")
+        plt.scatter(states[-1, 0], states[-1, 1], c="r", marker="v", s=150, label="End")
+        plt.scatter(
+            *task,
+            c="r",
+            marker="*",
+            label="Goal",
+            s=200,
+        )
+
+        for i, (xi, yi) in enumerate(zip(x, y)):
+            xi += np.random.rand() / 10
+            yi += np.random.rand() / 10
+            ax.text(xi, yi, str(i), fontsize=12)
+
+        # Create a colormap and normalize rewards for colormap
+        cmap = plt.cm.jet
+        norm = plt.Normalize(vmin=min(rewards), vmax=max(rewards))
+
+        # Draw arrows based on the deltas
+        for action, reward, xi, yi in np.concatenate(
+            [actions, rewards[..., None], states], axis=1
+        ):
+            if action is not None:
+                if reward is None:
+                    color = "black"
+                else:
+                    color = cmap(norm(reward))
+                ax.arrow(
+                    xi,
+                    yi,
+                    *(0.1 * deltas[int(action)]),
+                    head_width=0.1,
+                    head_length=0.2,
+                    fc=color,
+                    ec=color,
+                )
+
+        ax.set_xlim(-0.5, self.grid_size + 0.5)
+        ax.set_ylim(-0.5, self.grid_size + 0.5)
+
+        plt.grid(True)
+        plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="Reward")
+        return fig
 
     def render_eval_metrics(self, *metric: float) -> list[str]:
         return render_eval_metrics(*metric, max_num=self.max_regret)

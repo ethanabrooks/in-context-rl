@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 from gym.wrappers import TimeLimit
 from matplotlib.axes import Axes
+from matplotlib import patches
 from omegaconf import OmegaConf
 
 import data
@@ -49,12 +50,24 @@ def plot_trajectory(goal: np.ndarray, states: np.ndarray, ax: Optional[Axes] = N
     plt.plot(states[:, 0], states[:, 1], "-o", label="States Visited")
 
     # Mark start (now the second state) and end of the trajectory
-    plt.scatter(states[0, 0], states[0, 1], c="g", marker="^", s=150, label="Start")
-    plt.scatter(states[-1, 0], states[-1, 1], c="r", marker="v", s=150, label="End")
+    ax.scatter(states[0, 0], states[0, 1], c="g", marker="^", s=150, label="Start")
+    ax.scatter(states[-1, 0], states[-1, 1], c="r", marker="v", s=150, label="End")
 
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.legend()
+    # Add a circle with radius of 1 centered at (0,0) with a dashed line
+    circle = patches.Circle((0, 0), 1, fill=False, linestyle="--", edgecolor="gray")
+    ax.add_patch(circle)
+
+    # Fixing the axis limits
+    ax.set_xlim(-1.1, 1.1)
+    ax.set_ylim(-1.1, 1.1)
+    ax.set_aspect(
+        "equal", "box"
+    )  # this ensures the circle is indeed circular in the plot
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.legend()
+
     return fig
 
 
@@ -369,6 +382,15 @@ class Data(data.Data):
 
         log = {k: v.float().mean().item() for k, v in acc.items()}
         return log, table
+
+    def plot_rollout(
+        self,
+        task: np.ndarray,
+        states: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+    ):
+        return plot_trajectory(task, states)
 
     def plot_eval_metrics(self, df: pd.DataFrame) -> list[str]:
         return plot_eval_metrics(

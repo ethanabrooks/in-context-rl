@@ -79,7 +79,6 @@ class Rollout(evaluators.ad.Rollout):
 
     def get_action(self, history: torch.Tensor, t: int, episode_t) -> torch.Tensor:
         N = self.n_actions
-        i, *_, j = (history[0] != self.dataset.pad_value).nonzero()
 
         # for each row in history, we perform N rollouts
         repeated_history = history.repeat(N, 1)  # repeat history N times
@@ -92,7 +91,7 @@ class Rollout(evaluators.ad.Rollout):
             n_rollouts=self.n_rollouts * N,
             net=self.net,
             t=t,
-            task=self.task.repeat(N, 1),
+            raw_task=self.raw_task.repeat(N, 1),
         )
         rollouts = list(planner.rollout())  # rollout for each row in repeated_history
         rollouts = pd.DataFrame.from_records(rollouts)

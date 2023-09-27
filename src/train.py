@@ -37,19 +37,37 @@ def load(
 
 
 def evaluate(
-    dataset: Data, evaluator: evaluators.ad.Evaluator, net: GPT, section: str, **kwargs
+    dataset: Data,
+    evaluator: evaluators.ad.Evaluator,
+    n_plots: int,
+    net: GPT,
+    section: str,
+    **kwargs,
 ):
     df = pd.DataFrame.from_records(
         list(evaluator.evaluate(dataset=dataset, net=net, **kwargs))
     )
 
+    # print eval metrics
     metrics = df[["metric", "episode"]].groupby("episode").mean().metric
     graph = dataset.render_eval_metrics(*metrics)
     print("\n" + "\n".join(graph), end="\n\n")
+
+    # plot eval metrics
     fig = dataset.plot_eval_metrics(df=df)
     *_, final_metric = metrics
     metric_log = {f"{section}/final {dataset.eval_metric_name}": final_metric}
     fig_log = {f"{section}/{dataset.eval_metric_name}": wandb.Image(fig)}
+
+    # plot rollouts
+    idx = df.groupby("n")["episode"].idxmax()
+    df_last_episodes = df.loc[idx].set_index("n")
+    for n, row in df_last_episodes.iterrows():
+        if n >= n_plots:
+            break
+        fig_log[f"{section}/rollout {n}"] = wandb.Image(
+            dataset.plot_rollout(row.task, row.states, row.actions, row.rewards)
+        )
     return metric_log, fig_log
 
 

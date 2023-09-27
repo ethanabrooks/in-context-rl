@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Generic, TypeVar, Union
 
+import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -85,6 +86,16 @@ class Data(Dataset, ABC):
 
     @abstractmethod
     def plot_eval_metrics(self, df: pd.DataFrame) -> list[str]:
+        pass
+
+    @abstractmethod
+    def plot_rollout(
+        self,
+        task: np.ndarray,
+        states: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+    ):
         pass
 
     @abstractmethod
