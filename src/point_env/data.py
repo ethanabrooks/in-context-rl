@@ -241,7 +241,7 @@ class Data(data.Data):
 
     @property
     def eval_metric_name(self) -> str:
-        return "return"
+        return "regret"
 
     @property
     def include_task(self):
@@ -250,6 +250,11 @@ class Data(data.Data):
     @property
     @lru_cache
     def max_regret(self):
+        return -self.min_rewards.sum()
+
+    @property
+    @lru_cache
+    def max_rewards(self):
         # Get indices where done_mdp is True
         end_indices, _ = np.where(self.done_mdp)
         end_indices += 1  # +1 to include the last step in the split
@@ -257,10 +262,33 @@ class Data(data.Data):
         # Split the rewards array at the end of each episode
         split_rewards = np.split(self.rewards, end_indices)
 
-        # Sum rewards within each split to get returns, then find the maximum
+        # Sum rewards within each split to get returns
         returns = [np.sum(episode_rewards) for episode_rewards in split_rewards]
-        min_return = min(returns)
-        return -min_return
+
+        # Get the index of the episode with the best return
+        best_index = np.argmax(returns)
+
+        # Return the rewards of the best episode
+        return split_rewards[best_index]
+
+    @property
+    @lru_cache
+    def min_rewards(self):
+        # Get indices where done_mdp is True
+        end_indices, _ = np.where(self.done_mdp)
+        end_indices += 1  # +1 to include the last step in the split
+
+        # Split the rewards array at the end of each episode
+        split_rewards = np.split(self.rewards, end_indices)
+
+        # Sum rewards within each split to get returns
+        returns = [np.sum(episode_rewards) for episode_rewards in split_rewards]
+
+        # Get the index of the episode with the best return
+        worst_index = np.argmin(returns)
+
+        # Return the rewards of the best episode
+        return split_rewards[worst_index]
 
     @property
     @lru_cache
@@ -273,7 +301,9 @@ class Data(data.Data):
         return self.unpadded_data.max() + 1
 
     def build_env(self, seed: int, use_heldout_tasks: bool):
-        env = PointEnv(goal_sampler="circle", test=use_heldout_tasks)
+        env = PointEnv(
+            goal_sampler="circle", optimal=self.max_rewards, test=use_heldout_tasks
+        )
         env.seed(seed)
         env = TimeLimit(env, max_episode_steps=self.episode_length)
         return env

@@ -45,6 +45,7 @@ class PointEnv(Env):
     def __init__(
         self,
         goal_sampler: str = None,
+        optimal: list[float] = None,
         test: bool = False,
         test_threshold: float = np.pi / 2,
     ):
@@ -56,6 +57,7 @@ class PointEnv(Env):
                 else sampler(test_threshold, np.pi)
             )
 
+        self.optimal = optimal
         self.reset_task()
         self._action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,))
         self._observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2,))
@@ -112,4 +114,6 @@ class PointEnv(Env):
         done = False
         ob = self._get_obs()
         info = {"task": self.get_task()}
+        if self.optimal:
+            info.update({"optimal": self.optimal})
         return ob, reward, done, info
