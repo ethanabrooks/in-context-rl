@@ -7,6 +7,9 @@ data_args:
   include_task: true
   steps_per_context: 100
 data_path: point_env/data
+decay_args:
+  final: 100_000
+  warmup: 1000
 evaluate_ad_args:
   use_heldout_tasks: false
 evaluate_adpp_args:

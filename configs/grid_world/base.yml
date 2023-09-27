@@ -17,6 +17,9 @@ data_args:
     n_policies: ${data_args.n_data}
   yield_every: 1
 data_path: grid_world/ad
+decay_args:
+  final: 100_000
+  warmup: 1000
 evaluate_ad_args:
   use_heldout_tasks: false
 evaluate_adpp_args:

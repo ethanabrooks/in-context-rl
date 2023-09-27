@@ -57,6 +57,7 @@ def train(
     adpp_args: dict,
     data_args: dict,
     data_path: Path,
+    decay_args: dict,
     evaluate_args: dict,
     evaluate_ad_args: dict,
     evaluate_adpp_args: dict,
@@ -125,10 +126,7 @@ def train(
 
             # update learning rate
             n_tokens += mask.sum()
-            final_tokens = (
-                n_epochs * len(loader) * n_batch * dataset.step_dim
-            )  # number of tokens seen during training
-            decayed_lr = decay_lr(lr, final_tokens=final_tokens, n_tokens=n_tokens)
+            decayed_lr = decay_lr(lr, step=step, **decay_args)
             for param_group in optimizer.param_groups:
                 param_group.update(lr=decayed_lr)
 
