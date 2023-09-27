@@ -43,7 +43,7 @@ def evaluate(
         list(evaluator.evaluate(dataset=dataset, net=net, **kwargs))
     )
 
-    metrics = df.drop(["history"], axis=1).groupby("episode").mean().metric
+    metrics = df[["metric", "episode"]].groupby("episode").mean().metric
     graph = dataset.render_eval_metrics(*metrics)
     print("\n" + "\n".join(graph), end="\n\n")
     fig = dataset.plot_eval_metrics(df=df)

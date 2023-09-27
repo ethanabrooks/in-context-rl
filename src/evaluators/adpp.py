@@ -98,23 +98,10 @@ class Rollout(evaluators.ad.Rollout):
         rollouts = pd.DataFrame.from_records(rollouts)
         rollouts["row"] = rollouts.n % self.n_rollouts  # which row in original history
         group = rollouts.groupby("row")
-        # group.apply(self.check_identical_elements, i, j)
-        self.check_identical_elements  # whitelist
         idx = group.metric.idxmax()  # index of best rollout per original row
 
         # extract actions
-        histories = rollouts.loc[idx].history.tolist()
-        histories = torch.stack(histories).cuda()
-        i, j = self.index(t) + self.idxs.actions
-        actions = histories[:, i:j]
+        actions = rollouts.loc[idx].actions  # all actions
+        actions = np.stack([a[0] for a in actions.tolist()])  # first action
+        actions = torch.from_numpy(actions)
         return clamp(actions, self.envs.action_space)
-
-    def check_identical_elements(self, group: pd.DataFrame, i: int, j: int):
-        histories = group["history"].tolist()
-        # Convert to tensor for easier manipulation
-        histories_tensor = torch.stack(histories)
-
-        # Find the index where elements stop being pad_value for the first time
-        non_pad_column = histories_tensor[:, i:j]
-        first_row = non_pad_column[0]
-        assert torch.all(first_row[None] == non_pad_column)

@@ -1,5 +1,6 @@
 import functools
 from dataclasses import asdict, astuple, dataclass
+from typing import Iterable, Optional
 
 import numpy as np
 import torch
@@ -33,17 +34,17 @@ def clamp(action: torch.Tensor, space: Space):
 
 
 def get_metric(
-    info,
-    rewards,
-    gamma,
+    optimal: Optional[Iterable[float]],
+    rewards: Iterable[float],
+    gamma: float,
 ):
     actual_return = get_return(*rewards, gamma=gamma)
-    optimal = info.get("optimal", None)
     if optimal is None:
         return "return", actual_return
     else:
         optimal_return = get_return(*optimal, gamma=gamma)
         regret = optimal_return - actual_return
+        assert regret >= 0
         return "regret", regret
 
 
@@ -203,47 +204,57 @@ class Rollout:
         A = self.dataset.dims.actions
         N = self.n_rollouts
         O = self.dataset.dims.observations
+        T = self.episode_length * self.episodes_per_rollout
 
         episode_count = np.zeros(N, dtype=int)
-        episode_rewards = np.zeros((N, self.episode_length))
-        episode_t = np.zeros(N, dtype=int)
-
+        actions = np.zeros((T, N, A))
+        observations = np.zeros((T, N, O))
+        rewards = np.zeros((T, N))
+        tasks = self.task[None].repeat(T, 1, 1).cpu().numpy()
+        terminations = np.zeros((T, N), dtype=int)
+        episode_timesteps = np.zeros(N, dtype=int)
         history = self.init_history()
-        for t in tqdm(range(self.episode_length * self.episodes_per_rollout)):
+        for t in tqdm(range(T)):
             start = self.index(t)
-            action = self.get_action(history, t, episode_t)
+            action = self.get_action(history, t, episode_timesteps)
+            actions[t] = action.cpu().numpy()
             history[:, start - 1 - A : start - 1] = action
             step = self.step(action, history, t)
 
-            assert [*step.observation.shape] == [N, O]
-            assert [*step.reward.shape] == [N]
-            assert [*step.done.shape] == [N]
             assert len(step.info) == N
+            observations[t] = step.observation
+            rewards[t] = step.reward
+            terminations[t] = step.done
 
-            episode_rewards[np.arange(N), episode_t] = step.reward
-            episode_t += 1
+            episode_timesteps += 1
 
-            for n, (d, h, ec, er, et, i) in enumerate(
-                zip(
-                    step.done,
-                    history,
-                    episode_count,
-                    episode_rewards,
-                    episode_t,
-                    step.info,
-                )
-            ):
+            for n, (d, i) in enumerate(zip(step.done, step.info)):
                 assert isinstance(d, (bool, np.bool_))
                 assert isinstance(i, dict)
+                optimal = i.get("optimal", None)
                 if d:
-                    _, x = get_metric(info=i, rewards=er[:et], gamma=self.gamma)
-                    yield dict(n=n, history=h, episode=ec, metric=x)
+                    episode_timestep = episode_timesteps[n]
+                    t0 = max(0, t + 1 - episode_timestep)
+                    t1 = t + 1
+                    _, x = get_metric(
+                        optimal=optimal,
+                        rewards=rewards[t0:t1, n],
+                        gamma=self.gamma,
+                    )
+                    yield dict(
+                        n=n,
+                        states=observations[t0:t1, n],
+                        actions=actions[t0:t1, n],
+                        rewards=rewards[t0:t1, n],
+                        tasks=tasks[t0:t1, n],
+                        episode=episode_count[n],
+                        metric=x,
+                    )
                     episode_count[n] += 1
-                    episode_rewards[n] = 0
-                    episode_t[n] = 0
+                    episode_timesteps[n] = 0
                     self.reset(history, n, t)
 
-    def step(self, action: torch.Tensor, history: torch.Tensor, t: int):
+    def step(self, action: torch.Tensor, history: torch.Tensor, t: int) -> StepResult:
         observation, reward, done, info = self.envs.step(
             action.squeeze(0).cpu().numpy()
         )
