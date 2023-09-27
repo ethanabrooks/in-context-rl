@@ -109,6 +109,7 @@ class Data(data.Data):
         self,
         decimals: float,
         episodes_per_rollout: int,
+        expert_distillation: bool,
         include_task: bool,
         steps_per_context: int,
     ):
@@ -123,6 +124,32 @@ class Data(data.Data):
         assert valid_checksum(data_dir, load_path)
 
         components = replay_buffer.load(load_path)
+
+        def ends_to_starts(ends: np.ndarray):
+            return np.concatenate([[0], ends[:-1] + 1])
+
+        if expert_distillation:
+            episode_end, _ = components["done_mdp"].nonzero()
+            episode_start = ends_to_starts(episode_end)
+            history_end, _ = components["done"].nonzero()
+            history_start = ends_to_starts(history_end)
+            episode_starts_per_history = np.split(
+                episode_start, np.searchsorted(episode_end, history_start[1:])
+            )
+            n = 100
+
+            def generate_starts():
+                for starts in episode_starts_per_history:
+                    start, *_ = starts[-n:]
+                    yield start
+
+            starts = list(generate_starts())
+            ends = np.append(history_start[1:], -1)
+            components = np.concatenate(
+                [components[start:end] for start, end in zip(starts, ends)], axis=0
+            )
+
+            # Step 1: Compute a mask for each "done" value
 
         def make_mask(component: np.ndarray):
             mask = expand_as(~components["done_mdp"], component)
