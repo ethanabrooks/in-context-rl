@@ -114,6 +114,6 @@ class PointEnv(Env):
         done = False
         ob = self._get_obs()
         info = {"task": self.get_task()}
-        if self.optimal:
+        if self.optimal is not None:
             info.update({"optimal": self.optimal})
         return ob, reward, done, info
