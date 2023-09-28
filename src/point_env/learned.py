@@ -13,6 +13,7 @@ from gym.wrappers import TimeLimit
 from matplotlib import patches
 from matplotlib.axes import Axes
 from omegaconf import OmegaConf
+from tqdm import tqdm
 
 import data
 import replay_buffer
@@ -71,6 +72,29 @@ def plot_trajectory(goal: np.ndarray, states: np.ndarray, ax: Optional[Axes] = N
     ax.legend()
 
     return fig
+
+
+def plot_goals(goals: np.ndarray):
+    goals = np.unique(goals, axis=0)
+    _, ax = plt.subplots()
+
+    # Plot each goal as a star
+    for goal in tqdm(goals):
+        ax.scatter(*goal, c="r", marker="*", label="Goal", s=200)
+
+    # Add a circle with radius of 1 centered at (0,0) with a dashed line
+    circle = patches.Circle((0, 0), 1, fill=False, linestyle="--", edgecolor="gray")
+    ax.add_patch(circle)
+
+    # Fixing the axis limits
+    ax.set_xlim(-1.1, 1.1)
+    ax.set_ylim(-1.1, 1.1)
+    ax.set_aspect("equal", "box")
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+
+    plt.savefig("goals.png")
 
 
 def visualize_history(data: np.ndarray, history_index: int):
@@ -409,3 +433,4 @@ class Data(data.Data):
 
 # whitelist
 visualize_history
+plot_goals
