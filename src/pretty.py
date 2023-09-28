@@ -58,7 +58,7 @@ def render_eval_metrics(
         numbers = [subarray.mean() for subarray in subarrays]
     bar_elements = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
     for num in numbers:
-        assert num <= max_num
+        num = min(num, max_num)
         ratio = num / max_num
         full_blocks = int(ratio * width)
         fraction = ratio * width - full_blocks
