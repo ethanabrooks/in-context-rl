@@ -79,15 +79,18 @@ class PointEnv(Env):
     def task_space(self):
         return self._task_space
 
-    def sample_task(self):
-        goal = self.goal_sampler()
-        return goal
-
-    def set_task(self, task):
-        self._goal = task
+    def _get_obs(self):
+        return np.copy(self._state)
 
     def get_task(self):
         return self._goal
+
+    def reset(self):
+        return self.reset_model()
+
+    def reset_model(self):
+        self._state = np.zeros(2)
+        return self._get_obs()
 
     def reset_task(self, task=None):
         if task is None:
@@ -95,15 +98,12 @@ class PointEnv(Env):
         self.set_task(task)
         return task
 
-    def reset_model(self):
-        self._state = np.zeros(2)
-        return self._get_obs()
+    def sample_task(self):
+        goal = self.goal_sampler()
+        return goal
 
-    def reset(self):
-        return self.reset_model()
-
-    def _get_obs(self):
-        return np.copy(self._state)
+    def set_task(self, task):
+        self._goal = task
 
     def step(self, action):
         action = np.clip(action, self.action_space.low, self.action_space.high)
