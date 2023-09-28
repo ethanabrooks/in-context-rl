@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 from gym import spaces
 
@@ -8,29 +6,6 @@ from envs.base import Env
 
 def point_on_circle(angle: float, radius: float = 1.0):
     return radius * np.array((np.cos(angle), np.sin(angle)))
-
-
-def semi_circle_goal_sampler():
-    angle = random.uniform(0, np.pi)
-    return point_on_circle(angle)
-
-
-def circle_goal_sampler():
-    angle = random.uniform(0, 2 * np.pi)
-    return point_on_circle(angle)
-
-
-def double_arc_goal_sampler(start, end):
-    angle = random.uniform(start, end)
-    angle += np.random.choice(2) * np.pi
-    return point_on_circle(angle)
-
-
-GOAL_SAMPLERS = {
-    "semi-circle": semi_circle_goal_sampler,
-    "circle": circle_goal_sampler,
-    "double-arc": double_arc_goal_sampler,
-}
 
 
 class PointEnv(Env):
@@ -44,12 +19,19 @@ class PointEnv(Env):
 
     def __init__(
         self,
+        seed: int,
         goal_sampler: str = None,
         optimal: list[float] = None,
         test: bool = False,
         test_threshold: float = np.pi / 2,
     ):
-        self.goal_sampler = sampler = GOAL_SAMPLERS[goal_sampler]
+        self.random = np.random.default_rng(seed)
+        goal_samplers = {
+            "semi-circle": self.sample_semi_circle,
+            "circle": self.sample_circle,
+            "double-arc": self.sample_double_arc,
+        }
+        self.goal_sampler = sampler = goal_samplers[goal_sampler]
         if goal_sampler == "double-arc":
             self.goal_sampler = lambda: (
                 sampler(0, test_threshold)
@@ -97,6 +79,19 @@ class PointEnv(Env):
             task = self.sample_task()
         self.set_task(task)
         return task
+
+    def sample_circle(self):
+        angle = self.random.uniform(0, 2 * np.pi)
+        return point_on_circle(angle)
+
+    def sample_double_arc(self, start, end):
+        angle = self.random.uniform(start, end)
+        angle += self.random.choice(2) * np.pi
+        return point_on_circle(angle)
+
+    def sample_semi_circle(self):
+        angle = self.random.uniform(0, np.pi)
+        return point_on_circle(angle)
 
     def sample_task(self):
         goal = self.goal_sampler()

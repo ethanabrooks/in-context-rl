@@ -295,8 +295,9 @@ class Data(data.Data):
             optimal = self.episode_rewards[best_index].flatten()
         else:
             optimal = None
-        env = PointEnv(goal_sampler="circle", optimal=optimal, test=use_heldout_tasks)
-        env.seed(seed)
+        env = PointEnv(
+            goal_sampler="circle", optimal=optimal, seed=seed, test=use_heldout_tasks
+        )
         if max_episode_steps is None:
             max_episode_steps = self.episode_length
         env = TimeLimit(env, max_episode_steps=max_episode_steps)
