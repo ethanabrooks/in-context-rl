@@ -121,11 +121,13 @@ class Data(data.Data):
     def __init__(
         self,
         decimals: float,
+        episode_length: int,
         episodes_per_rollout: int,
         expert_distillation: bool,
         include_task: bool,
         steps_per_context: int,
     ):
+        self._episode_length = episode_length
         self._episodes_per_rollout = episodes_per_rollout
         self._include_task = include_task
         self.steps_per_context = steps_per_context
@@ -232,14 +234,8 @@ class Data(data.Data):
         return self._encoder
 
     @property
-    @lru_cache
     def episode_length(self):
-        end_indices, _ = np.where(self.done_mdp)
-
-        # Calculate differences between consecutive end indices to get episode lengths
-        episode_lengths = np.diff(end_indices, prepend=-1) - 1
-
-        return episode_lengths.max()
+        return self._episode_length
 
     @property
     def episodes_per_rollout(self):
