@@ -27,8 +27,10 @@ from replay_buffer import valid_checksum
 def get_history_trajectories(data: np.ndarray, history_index: int):
     # Extract where done is True to split the histories
     done_indices, _ = np.where(data["done"])
-    start_idx = done_indices[history_index - 1] if history_index > 0 else 0
-    end_idx = done_indices[history_index] + 1
+    done_indices += 1  # +1 to include the last step in the split
+    done_indices = np.pad(done_indices, (1, 0), constant_values=0)
+    start_idx = done_indices[history_index]
+    end_idx = done_indices[history_index + 1]
 
     history_data = data[start_idx:end_idx]
 
@@ -83,7 +85,7 @@ def visualize_history(data: np.ndarray, history_index: int):
         goal = trajectory[0]["task"]
 
         # Consider the second state as the start, and slice the states accordingly
-        states = trajectory["state"][1:]
+        states = trajectory["state"]
         plot_trajectory(goal, states, ax=plt.gca())
 
     # Plot the trajectories
@@ -158,6 +160,13 @@ class Data(data.Data):
             )
 
             # Step 1: Compute a mask for each "done" value
+
+        # Fix bug where first step is omitted
+        episode_end, _ = components["done_mdp"].nonzero()
+        episode_start = ends_to_starts(episode_end)
+        states = components["state"]
+        starts = episode_start[:-1]
+        states[starts] = np.zeros_like(states[starts])
 
         def make_mask(component: np.ndarray):
             mask = expand_as(~components["done_mdp"], component)
