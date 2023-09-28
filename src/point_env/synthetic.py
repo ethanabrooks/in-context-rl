@@ -45,7 +45,7 @@ class Data(point_env.learned.Data):
     ):
         self.max_steps = max_steps
         self.n_histories = n_histories
-        super().__init__(*args, expert_distillation=False, **kwargs)
+        super().__init__(*args, omit_episodes=None, **kwargs)
 
     def get_data(self):
         env = self.build_env(
