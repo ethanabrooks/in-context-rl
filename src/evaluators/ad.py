@@ -44,7 +44,8 @@ def get_metric(
     else:
         optimal_return = get_return(*optimal, gamma=gamma)
         regret = optimal_return - actual_return
-        assert regret >= 0
+        if regret < 0:
+            breakpoint()
         return "regret", regret
 
 
