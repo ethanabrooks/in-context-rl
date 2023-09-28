@@ -72,7 +72,14 @@
     "artifacts/rldl/varibad/HalfCheetahVel-v0-multitask:512.6": "9be8a4254fa0e31309b0fec05dfe769af7592bc30db25ac375d8cdbf07fda0d5",
     "artifacts/rldl/varibad/HalfCheetahVel-v0-multitask:512.7": "fbee841a1c1b09786440ca62e82a627fad610a7e1082fc768689b5df472d79df",
     "artifacts/rldl/varibad/PointEnv-v0-AD:v0": "ce124c7447f04c557db319e8a7e795b1b35ff682e2f1a76ecea1b18a706a35cd",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v1": "b42ec4837078967b478f8e00daf3573e135a4b0810bc5986166362ded04611e0",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v2": "6919e3c52cdb98e56165994af6dd8e0787cb2d2b51968e84fc85997974af7dcb",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v3": "fb78f1faa736c68b3fac764ebcd84c26107b0ca12cc635cf1e3ece8c2500a1cc",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v4": "3468d61c44145690881844be2567b6b399688553da83e3c31664a9e71e155ea4",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v5": "8c4ebf8d59ae97f94dc23545a4acbdee7435d658ffdf07c58ff70644186e9be1",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v6": "06d4db0eab23e2426bb5c5cca4592b96b0b6feb49c563a9cd9d85c416c79b059",
+    "artifacts/rldl/varibad/PointEnv-v0-AD:v7": "52022a51bd170243650e92de894d788067c2fd86d876c98740d4e99475fa9d2c",
     "replay_buffer/rldl/varibad/AntDir2D-v0-multitask-old:None.{0..63}": "8dac4b41aa23093b84b6eaf70f774f2fb6cc4d7e4ff3935dab64fa510d08503f",
     "replay_buffer/rldl/varibad/HalfCheetahVel-v0-multitask:512.{0..7}": "4b31275114d71aa2deba2606ce11f5329b4d735ead5d5ec7951e9467e101dab5",
-    "replay_buffer/rldl/varibad/PointEnv-v0-AD:v0": "45f0f8df4a8f1c77c43a5e2d8a15249f1ea1d86d4195e8b9c97993e14ed483dc"
+    "replay_buffer/rldl/varibad/PointEnv-v0-AD:v{0..7}": "564126e3d7ff499574634bd7e55f2da3e1c7faa49bd16dc13f2db521e62f25fd"
 }
