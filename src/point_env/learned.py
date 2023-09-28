@@ -167,8 +167,10 @@ class Data(data.Data):
         self.tasks: np.ndarray = components["task"].round(decimals)
         if not include_task:
             self.tasks = np.zeros_like(self.tasks)
+        actions = components["actions"]
+        actions = PointEnv.clip_action(actions)
+        self.actions: np.ndarray = actions.round(decimals)
         self.observations: np.ndarray = components["state"].round(decimals)
-        self.actions: np.ndarray = components["actions"].round(decimals)
         self.rewards: np.ndarray = components["rewards"].round(decimals)
         self.done_mdp: np.ndarray = components["done_mdp"]
         self.ends: np.ndarray = components["done"].flatten()

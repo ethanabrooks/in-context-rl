@@ -8,6 +8,9 @@ def point_on_circle(angle: float, radius: float = 1.0):
     return radius * np.array((np.cos(angle), np.sin(angle)))
 
 
+ACTION_SPACE = spaces.Box(low=-1.0, high=1.0, shape=(2,))
+
+
 class PointEnv(Env):
     """
     point robot on a 2-D plane with position control
@@ -41,7 +44,7 @@ class PointEnv(Env):
 
         self.optimal = optimal
         self.reset_task()
-        self._action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,))
+        self._action_space = ACTION_SPACE
         self._observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2,))
 
         points = np.stack([point_on_circle(a) for a in np.linspace(0, 2 * np.pi, 4)])
@@ -63,6 +66,10 @@ class PointEnv(Env):
     def task_space(self):
         return self._task_space
 
+    @staticmethod
+    def clip_action(action: np.ndarray):
+        return np.clip(action, ACTION_SPACE.low, ACTION_SPACE.high)
+
     def _get_obs(self):
         return np.copy(self._state)
 
@@ -78,9 +85,7 @@ class PointEnv(Env):
 
         while True:
             optimal_action = goal - current_state
-            optimal_action = np.clip(
-                optimal_action, self.action_space.low, self.action_space.high
-            )
+            optimal_action = self.clip_action(optimal_action)
             current_state = current_state + optimal_action
             yield -np.linalg.norm(current_state - goal, ord=2)
 
@@ -125,7 +130,7 @@ class PointEnv(Env):
         self._goal = task
 
     def step(self, action):
-        action = np.clip(action, self.action_space.low, self.action_space.high)
+        action = self.clip_action(action)
         assert self.action_space.contains(action), action
 
         self._state = self._state + 0.1 * action
