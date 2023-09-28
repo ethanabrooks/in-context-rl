@@ -325,7 +325,10 @@ class Data(data.Data):
         else:
             optimal = None
         env = PointEnv(
-            goal_sampler="circle", optimal=optimal, seed=seed, test=use_heldout_tasks
+            goal_sampler="double-arc",
+            optimal=optimal,
+            seed=seed,
+            test=use_heldout_tasks,
         )
         if max_episode_steps is None:
             max_episode_steps = self.episode_length
