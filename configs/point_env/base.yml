@@ -5,6 +5,7 @@ data_args:
   episode_length: 20
   episodes_per_rollout: 5
   include_task: true
+  mask_nonactions: false
   steps_per_context: 100
 data_path: point_env/learned
 decay_args:

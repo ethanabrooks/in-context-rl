@@ -1,6 +1,6 @@
 import os
 from collections import defaultdict
-from dataclasses import asdict, astuple
+from dataclasses import asdict, astuple, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -150,6 +150,7 @@ class Data(data.Data):
         episode_length: int,
         episodes_per_rollout: int,
         include_task: bool,
+        mask_nonactions: bool,
         omit_episodes: Optional[tuple[int, int]],
         steps_per_context: int,
     ):
@@ -214,6 +215,13 @@ class Data(data.Data):
             actions=np.ones_like(self.actions),
             rewards=np.ones_like(self.rewards),
         )
+        if mask_nonactions:
+            masks = replace(
+                masks,
+                tasks=np.zeros_like(masks.tasks),
+                observations=np.zeros_like(masks.observations),
+                rewards=np.zeros_like(masks.rewards),
+            )
         data = Step(
             tasks=self.tasks,
             observations=self.observations,
