@@ -94,6 +94,8 @@ def compute_directory_checksum(dir_path: Path):
 
 
 def valid_checksum(data_dir: Path, dir_path: Path, verbose: bool = False):
+    if not dir_path.exists():
+        return False
     with Path("checksums.json").open("r") as f:
         checksums = json.load(f)
     key = str(dir_path.relative_to(data_dir))
@@ -160,7 +162,7 @@ def download(data_dir: Path, *artifact_patterns: str):
                 )
                 run_buffers[path.stem] = replay_buffer
             snapshot = Snapshot(path=str(artifact_dir))
-            with Timer("Restoring snapshot"):
+            with Timer(f"Restoring {name}"):
                 snapshot.restore(run_buffers)
             buffers.extend(run_buffers.values())
 
