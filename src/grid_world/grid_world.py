@@ -198,7 +198,8 @@ class GridWorld:
                 mask &= ~in_heldout_goals
 
         remaining_states = all_states[mask]
-        sampled_indices = torch.randint(low=0, high=len(remaining_states), size=(n,))
+        sampled_indices = self.random.choice(len(remaining_states), size=(n,))
+        sampled_indices = torch.from_numpy(sampled_indices)
         return remaining_states[sampled_indices]
 
     def step_fn(
