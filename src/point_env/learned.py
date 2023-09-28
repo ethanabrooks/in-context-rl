@@ -143,6 +143,10 @@ def expand_as(x: np.ndarray, y: np.ndarray):
     return np.broadcast_to(x, y.shape)
 
 
+def ends_to_starts(ends: np.ndarray):
+    return np.concatenate([[0], ends[:-1] + 1])
+
+
 class Data(data.Data):
     def __init__(
         self,
@@ -159,9 +163,6 @@ class Data(data.Data):
         self._include_task = include_task
         self.steps_per_context = steps_per_context
         components = self.get_data()
-
-        def ends_to_starts(ends: np.ndarray):
-            return np.concatenate([[0], ends[:-1] + 1])
 
         if omit_episodes is not None:
             omit_start, omit_end = omit_episodes
