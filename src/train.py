@@ -11,8 +11,9 @@ from torch.utils.data import DataLoader
 from wandb.sdk.wandb_run import Run
 
 import data
+import evaluators.ad
+import evaluators.adpp
 import wandb
-from evaluators.ad import Evaluator
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy, plot_returns
@@ -21,6 +22,7 @@ from utils import set_seed
 
 
 def train(
+    adpp_args: dict,
     data_args: dict,
     data_path: Path,
     evaluate_args: dict,
@@ -37,7 +39,8 @@ def train(
     run_name: str,
     save_freq: int,
     seed: int,
-    test_freq: int,
+    test_ad_freq: int,
+    test_adpp_freq: int,
     weights_args: dict,
 ) -> None:
     save_dir = os.path.join("results", run_name)
@@ -61,13 +64,13 @@ def train(
     tick = time.time()
     log_table = Table()
 
-    def evaluate(section: str):
+    def evaluate(evaluator: evaluators.ad.Evaluator, section: str):
         df = pd.DataFrame.from_records(
-            list(Evaluator().evaluate(dataset=dataset, net=net, **evaluate_args))
+            list(evaluator.evaluate(dataset=dataset, net=net, **evaluate_args))
         )
 
         min_return, max_return = dataset.return_range
-        metrics = df.drop("name", axis=1).groupby("episode").mean().metric
+        metrics = df.drop(["history", "name"], axis=1).groupby("episode").mean().metric
         graph = render_graph(*metrics, max_num=max_return)
         print("\n" + "\n".join(graph), end="\n\n")
         try:
@@ -130,9 +133,14 @@ def train(
 
                 # test
                 log_t = t // log_freq
-                if log_t % test_freq == 0:
-                    ad_log, ad_fig = evaluate(section="eval AD")
-                    log.update(ad_fig)
+                if test_adpp_freq is not None and log_t % test_adpp_freq == 0:
+                    adpp_log, fig = evaluate(
+                        evaluators.adpp.Evaluator(**adpp_args), section="eval AD++"
+                    )
+                    log.update(fig)
+                if log_t % test_ad_freq == 0:
+                    ad_log, fig = evaluate(evaluators.ad.Evaluator(), section="eval AD")
+                    log.update(fig)
 
                 log.update(adpp_log)
                 log.update(ad_log)

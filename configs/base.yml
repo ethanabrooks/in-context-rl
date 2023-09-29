@@ -1,3 +1,5 @@
+adpp_args:
+  n_actions: 5
 data_args:
   alpha: 0.5
   grid_world_args:
@@ -39,6 +41,7 @@ optimizer_config:
 run_name: trial
 save_freq: 400
 seed: 0
-test_freq: 5
+test_ad_freq: 5
+test_adpp_freq: null
 weights_args:
   actions: 5

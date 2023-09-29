@@ -43,8 +43,7 @@ def get_metric(
 
 
 class Evaluator:
-    @classmethod
-    def evaluate(cls, dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
+    def evaluate(self, dataset: Data, dummy_vec_env: bool, n_rollouts: int, **kwargs):
         N = n_rollouts
         env_fns = [dataset.build_env for _ in range(N)]
         envs: SubprocVecEnv
@@ -53,15 +52,14 @@ class Evaluator:
         if not dataset.include_goal:
             task = torch.zeros_like(task)
         try:
-            evaluator = cls.make_rollout(
+            evaluator = self.make_rollout(
                 dataset=dataset, envs=envs, n_rollouts=n_rollouts, **kwargs, task=task
             )
             yield from evaluator.rollout()
         finally:
             envs.close()
 
-    @staticmethod
-    def make_rollout(*args, **kwargs):
+    def make_rollout(self, *args, **kwargs):
         return Rollout(*args, **kwargs)
 
 
@@ -93,6 +91,10 @@ class Rollout:
     n_rollouts: int
     net: GPT
     task: torch.Tensor
+
+    @property
+    def episodes_per_rollout(self):
+        return self.dataset.episodes_per_rollout
 
     def get_action(self, history: torch.Tensor, t: int) -> torch.Tensor:
         action = self.predict_many(history, t, *self.idxs.actions)
@@ -170,16 +172,14 @@ class Rollout:
         A = self.dataset.dims.actions
         N = self.n_rollouts
         O = self.dataset.dims.observations
-        T = self.dataset.episode_length * self.dataset.episodes_per_rollout
         dataset = self.dataset
 
-        T = dataset.episode_length * dataset.episodes_per_rollout
         episode_count = np.zeros(N, dtype=int)
         episode_rewards = np.zeros((N, dataset.episode_length))
         episode_t = np.zeros(N, dtype=int)
 
         history = self.init_history()
-        for t in tqdm(range(T)):
+        for t in tqdm(range(self.dataset.episode_length * self.episodes_per_rollout)):
             start = self.index(t)
             action = self.get_action(history, t)
             history[:, start - 1 - A : start - 1] = action
@@ -193,14 +193,21 @@ class Rollout:
             episode_rewards[np.arange(N), episode_t] = step.reward
             episode_t += 1
 
-            for n, (d, ec, er, et, i) in enumerate(
-                zip(step.done, episode_count, episode_rewards, episode_t, step.info)
+            for n, (d, h, ec, er, et, i) in enumerate(
+                zip(
+                    step.done,
+                    history,
+                    episode_count,
+                    episode_rewards,
+                    episode_t,
+                    step.info,
+                )
             ):
                 assert isinstance(d, (bool, np.bool_))
                 assert isinstance(i, dict)
                 if d:
                     name, x = get_metric(info=i, rewards=er[:et], gamma=self.gamma)
-                    yield dict(n=n, name=name, episode=ec, metric=x)
+                    yield dict(n=n, history=h, name=name, episode=ec, metric=x)
                     episode_count[n] += 1
                     episode_rewards[n] = 0
                     episode_t[n] = 0
