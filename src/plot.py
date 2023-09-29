@@ -19,8 +19,8 @@ def plot_accuracy(
 
 
 def plot_returns(df: pd.DataFrame, name: str, ymin: float, ymax: float):
-    means = df.groupby("t").metric.mean()
-    sems = df.groupby("t").metric.sem()
+    means = df.groupby("episode").metric.mean()
+    sems = df.groupby("episode").metric.sem()
 
     fig, ax = plt.subplots()
     ax.fill_between(means.index, means - sems, means + sems, alpha=0.2)

@@ -142,8 +142,8 @@ class Data(data.base.Data):
             astuple(step),
             dim=-1,
         )
-        n_data, _, _ = data.shape
-        return data.long().reshape(n_data, -1).contiguous()
+        n_data, *_ = data.shape
+        return data.long().view(n_data, -1)
 
     def collect_data(self, grid_world: ValueIteration, **kwargs):
         console.log("Value iteration...")

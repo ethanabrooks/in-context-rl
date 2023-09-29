@@ -56,6 +56,8 @@ def train(
 
     counter = Counter()
     n_tokens = 0
+    ad_log = {}
+    adpp_log = {}
     tick = time.time()
     log_table = Table()
 
@@ -65,7 +67,7 @@ def train(
         )
 
         min_return, max_return = dataset.return_range
-        metrics = df.drop("name", axis=1).groupby("t").mean().metric
+        metrics = df.drop("name", axis=1).groupby("episode").mean().metric
         graph = render_graph(*metrics, max_num=max_return)
         print("\n" + "\n".join(graph), end="\n\n")
         try:
@@ -132,6 +134,7 @@ def train(
                     ad_log, ad_fig = evaluate(section="eval AD")
                     log.update(ad_fig)
 
+                log.update(adpp_log)
                 log.update(ad_log)
 
                 if log_t % log_tables_freq == 0:
