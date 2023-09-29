@@ -10,15 +10,19 @@ from point_env.env import PointEnv
 def generate_synthetic_data(
     env: PointEnv,
     max_steps: int,
+    n_episodes_random: int,
     n_histories: int,
 ):
-    for _ in range(n_histories):
+    for i in range(n_histories):
         goal = env.reset_task()
         state = env.reset()
         done_mdp = False
         steps = 0
         while not done_mdp and steps < max_steps:
-            action = (goal - state) / 0.1
+            if i < n_episodes_random:
+                action = env.action_space.sample()
+            else:
+                action = (goal - state) / 0.1
             next_state, reward, done_mdp, _ = env.step(action)
             done = done_mdp
             yield dict(
@@ -40,10 +44,12 @@ class Data(point_env.learned.Data):
         self,
         *args,
         max_steps: int,
+        n_episodes_random: int,
         n_histories: int,
         **kwargs,
     ):
         self.max_steps = max_steps
+        self.n_episodes_random = n_episodes_random
         self.n_histories = n_histories
         super().__init__(*args, omit_episodes=None, **kwargs)
 
@@ -71,6 +77,7 @@ class Data(point_env.learned.Data):
                 generate_synthetic_data(
                     env=env,
                     max_steps=self.max_steps,
+                    n_episodes_random=self.n_episodes_random,
                     n_histories=self.n_histories,
                 ),
                 n_data,
