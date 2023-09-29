@@ -102,5 +102,5 @@ class Rollout(evaluators.ad.Rollout):
         # extract actions
         actions = rollouts.loc[idx].actions  # all actions
         actions = np.stack([a[0] for a in actions.tolist()])  # first action
-        actions = torch.from_numpy(actions)
+        actions = torch.from_numpy(actions).cuda()
         return clamp(actions, self.envs.action_space)
