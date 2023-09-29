@@ -1,4 +1,3 @@
-import functools
 from dataclasses import asdict, astuple, dataclass
 from typing import Iterable, Optional
 
@@ -8,7 +7,6 @@ from gym.spaces import Box, Discrete, MultiDiscrete, Space
 from tqdm import tqdm
 
 from data import Data, Step
-from envs.parallel.dummy_vec_env import DummyVecEnv
 from envs.parallel.subproc_vec_env import SubprocVecEnv
 from models import GPT
 
@@ -50,35 +48,16 @@ def get_metric(
 
 
 class Evaluator:
-    def evaluate(
-        self,
-        dataset: Data,
-        dummy_vec_env: bool,
-        n_rollouts: int,
-        use_heldout_tasks: bool,
-        **kwargs
-    ):
-        N = n_rollouts
-        env_fns = [
-            functools.partial(
-                dataset.build_env, seed=i, use_heldout_tasks=use_heldout_tasks
-            )
-            for i in range(N)
-        ]
-        envs: SubprocVecEnv
-        envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
+    def evaluate(self, dataset: Data, envs: SubprocVecEnv, **kwargs):
         task = torch.tensor(envs.get_task()).cuda()
-        try:
-            evaluator = self.make_rollout(
-                dataset=dataset,
-                envs=envs,
-                **kwargs,
-                n_rollouts=n_rollouts,
-                raw_task=task
-            )
-            yield from evaluator.rollout()
-        finally:
-            envs.close()
+        evaluator = self.make_rollout(
+            dataset=dataset,
+            envs=envs,
+            **kwargs,
+            n_rollouts=envs.n_processes,
+            raw_task=task
+        )
+        yield from evaluator.rollout()
 
     def make_rollout(self, *args, **kwargs):
         return Rollout(*args, **kwargs)

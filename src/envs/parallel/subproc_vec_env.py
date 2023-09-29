@@ -85,8 +85,9 @@ class SubprocVecEnv:
 
         env_fns: iterable of callables -  functions that create envs to run in subprocesses. Need to be cloud-pickleable
         """
-        self.waiting = False
+        self._n_processes = len(env_fns)
         self.closed = False
+        self.waiting = False
         self.remotes: list[Connection]
         self.remotes, self.ps = self.start_processes(env_fns)
 
@@ -98,6 +99,10 @@ class SubprocVecEnv:
     @property
     def action_space(self):
         return self.send_to_first(Command.ACTION_SPACE, None)
+
+    @property
+    def n_processes(self):
+        return self._n_processes
 
     @property
     def observation_space(self):

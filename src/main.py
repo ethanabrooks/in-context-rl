@@ -114,8 +114,7 @@ def no_log(config, dummy_vec_env: bool = False, load_path: str = None):
         config = wandb.Api().run(load_path).config
         del config["config"]
         del config["relative_commit"]
-    config["evaluate_args"].update(dummy_vec_env=dummy_vec_env)
-    config.update(load_path=load_path)
+    config.update(dummy_vec_env=dummy_vec_env, load_path=load_path)
     return train(**config, run=None)
 
 

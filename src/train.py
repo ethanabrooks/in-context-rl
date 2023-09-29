@@ -16,6 +16,7 @@ import evaluators.ad
 import evaluators.adpp
 import wandb
 from data import Data
+from envs.parallel.subproc_vec_env import SubprocVecEnv
 from models import GPT
 from optimizer import configure, decay_lr
 from plot import plot_accuracy
@@ -72,13 +73,33 @@ def evaluate(
 
 
 def train(
-    adpp_args: dict,
+    ad_envs_args: dict,
+    adpp_envs_args: dict,
     data_args: dict,
     data_path: Path,
+    dummy_vec_env: bool,
+    seed: int,
+    **kwargs,
+):
+    set_seed(seed)
+    dataset = data.make(data_path, **data_args)
+    ad_envs = dataset.build_vec_envs(**ad_envs_args, dummy_vec_env=dummy_vec_env)
+    adpp_envs = dataset.build_vec_envs(**adpp_envs_args, dummy_vec_env=dummy_vec_env)
+    print("Dataset and environments created.")
+    try:
+        train_with_envs(ad_envs=ad_envs, adpp_envs=adpp_envs, dataset=dataset, **kwargs)
+    finally:
+        ad_envs.close()
+        adpp_envs.close()
+
+
+def train_with_envs(
+    ad_envs: SubprocVecEnv,
+    adpp_args: dict,
+    adpp_envs: SubprocVecEnv,
+    dataset: Data,
     decay_args: dict,
     evaluate_args: dict,
-    evaluate_ad_args: dict,
-    evaluate_adpp_args: dict,
     grad_norm_clip: float,
     load_path: Optional[str],
     log_interval: int,
@@ -91,15 +112,10 @@ def train(
     optimizer_config: dict,
     run: Optional[Run],
     save_interval: int,
-    seed: int,
     test_ad_interval: int,
     test_adpp_interval: int,
     weights_args: dict,
 ) -> None:
-    set_seed(seed)
-
-    dataset = data.make(data_path, **data_args)
-
     print("Create net... ", end="", flush=True)
     net = GPT(
         encoder=dataset.encoder,
@@ -174,22 +190,22 @@ def train(
                 ):
                     adpp_log, fig = evaluate(
                         dataset=dataset,
+                        envs=adpp_envs,
                         evaluator=evaluators.adpp.Evaluator(**adpp_args),
                         net=net,
                         section="eval AD++",
                         **evaluate_args,
-                        **evaluate_adpp_args,
                     )
                     log.update(fig)
                     log_table.print_header(row)
                 if log_t % test_ad_interval == 0:
                     ad_log, fig = evaluate(
                         dataset=dataset,
+                        envs=ad_envs,
                         evaluator=evaluators.ad.Evaluator(),
                         net=net,
                         section="eval AD",
                         **evaluate_args,
-                        **evaluate_ad_args,
                     )
                     log.update(fig)
                     log_table.print_header(row)

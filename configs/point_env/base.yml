@@ -1,5 +1,11 @@
+ad_envs_args:
+  n_processes: 10
+  use_heldout_tasks: false
 adpp_args:
   n_actions: 5
+adpp_envs_args:
+  n_processes: 10
+  use_heldout_tasks: false
 data_args:
   decimals: 2
   episode_length: 20
@@ -11,15 +17,10 @@ data_path: point_env/learned
 decay_args:
   final: 100_000
   warmup: 1000
-evaluate_ad_args:
-  use_heldout_tasks: false
-evaluate_adpp_args:
-  use_heldout_tasks: true
+dummy_vec_env: true
 evaluate_args:
-  dummy_vec_env: false
   gamma: 0.99 # TODO
   n_plots: 3
-  n_rollouts: 10
 grad_norm_clip: 1.0
 load_path: null
 log_interval: 20

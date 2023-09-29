@@ -1,3 +1,4 @@
+import functools
 import importlib
 from abc import ABC, abstractmethod
 from dataclasses import asdict, astuple, dataclass
@@ -12,6 +13,8 @@ from torch.utils.data import Dataset
 
 from encoder import Encoder
 from envs.base import Env
+from envs.parallel.dummy_vec_env import DummyVecEnv
+from envs.parallel.subproc_vec_env import SubprocVecEnv
 
 T = TypeVar("T")
 
@@ -78,6 +81,19 @@ class Data(Dataset, ABC):
     def build_env(self, seed: int, use_heldout_tasks: bool) -> Env:
         pass
 
+    def build_vec_envs(
+        self, n_processes: int, use_heldout_tasks: bool, dummy_vec_env: bool = False
+    ):
+        env_fns = [
+            functools.partial(
+                self.build_env, seed=i, use_heldout_tasks=use_heldout_tasks
+            )
+            for i in range(n_processes)
+        ]
+        envs: SubprocVecEnv
+        envs = DummyVecEnv(env_fns) if dummy_vec_env else SubprocVecEnv(env_fns)
+        return envs
+
     @abstractmethod
     def get_metrics(
         self, logits: torch.Tensor, sequence: torch.Tensor
@@ -117,4 +133,5 @@ def make(path: Union[str, Path], *args, **kwargs) -> Data:
     name = path.stem
     name = ".".join(path.parts)
     module = importlib.import_module(name)
-    return module.Data(*args, **kwargs)
+    data: Data = module.Data(*args, **kwargs)
+    return data
