@@ -56,9 +56,35 @@ def train(
 
     counter = Counter()
     n_tokens = 0
-    eval_log = None
     tick = time.time()
     log_table = Table()
+
+    def evaluate(section: str):
+        df = pd.DataFrame.from_records(
+            list(Evaluator().evaluate(dataset=dataset, net=net, **evaluate_args))
+        )
+
+        min_return, max_return = dataset.return_range
+        metrics = df.drop("name", axis=1).groupby("t").mean().metric
+        graph = render_graph(*metrics, max_num=max_return)
+        print("\n" + "\n".join(graph), end="\n\n")
+        try:
+            [name] = df.name.unique()
+        except ValueError:
+            raise ValueError("Multiple names in the same rollout")
+        fig = plot_returns(
+            df=df,
+            name=name,
+            ymin=min_return,
+            ymax=max_return,
+        )
+        *_, final_metric = metrics
+        log_table.print_header(row)
+        metric_log = {f"{section}/final {name}": final_metric}
+        fig_log = {
+            f"{section}/{name}": wandb.Image(fig),
+        }
+        return metric_log, fig_log
 
     for e in range(n_epochs):
         # Split the dataset into train and test sets
@@ -103,35 +129,10 @@ def train(
                 # test
                 log_t = t // log_freq
                 if log_t % test_freq == 0:
-                    df = pd.DataFrame.from_records(
-                        list(
-                            Evaluator.evaluate(
-                                dataset=dataset, net=net, **evaluate_args
-                            )
-                        )
-                    )
+                    ad_log, ad_fig = evaluate(section="eval AD")
+                    log.update(ad_fig)
 
-                    min_return, max_return = dataset.return_range
-                    metrics = df.drop("name", axis=1).groupby("t").mean().metric
-                    graph = render_graph(*metrics, max_num=max_return)
-                    print("\n" + "\n".join(graph), end="\n\n")
-                    try:
-                        [name] = df.name.unique()
-                    except ValueError:
-                        raise ValueError("Multiple names in the same rollout")
-                    fig = plot_returns(
-                        df=df,
-                        name=name,
-                        ymin=min_return,
-                        ymax=max_return,
-                    )
-                    *_, final_metric = metrics
-                    log.update({f"eval/{name}": wandb.Image(fig)})
-                    eval_log = {f"eval/final {name}": final_metric}
-                    log_table.print_header(row)
-
-                if eval_log is not None:
-                    log.update(eval_log)
+                log.update(ad_log)
 
                 if log_t % log_tables_freq == 0:
 
