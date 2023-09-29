@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import asdict, astuple, replace
+from functools import lru_cache
 
 import torch
 import torch.nn.functional as F
@@ -124,8 +125,9 @@ class Data(data.base.Data):
         return self._include_goal
 
     @property
+    @lru_cache
     def return_range(self):
-        return 0.0, 1.0
+        return self.rewards.min().item(), self.rewards.max().item()
 
     @property
     def episodes_per_rollout(self):
