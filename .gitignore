@@ -110,3 +110,4 @@ venv.bak/
 .direnv
 wandb/
 src/param_space.py
+ignore/
