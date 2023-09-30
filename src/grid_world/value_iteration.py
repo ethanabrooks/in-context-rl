@@ -65,9 +65,9 @@ class ValueIteration(GridWorld):
         for _ in range(n_rounds):
             V = self.policy_evaluation(Pi, V)
             # self.visualize_values(V)
+            yield V, Pi
             Pi = self.policy_improvement(Pi, V)
             # self.visualize_policy(Pi)
-            yield V, Pi
 
     def policy_evaluation(self, Pi: torch.Tensor, V: torch.Tensor = None):
         self.check_pi(Pi)
