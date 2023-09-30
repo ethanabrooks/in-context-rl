@@ -5,7 +5,7 @@ adpp_args:
   n_actions: 5
 adpp_envs_args:
   n_processes: 10
-  use_heldout_tasks: false
+  use_heldout_tasks: true
 data_args:
   alpha: 0.5
   dense_reward: false
@@ -13,7 +13,7 @@ data_args:
     atol: 0.2
     gamma: 0.99
     seed: ${seed}
-  heldout_tasks: []
+  heldout_tasks: [[0, 0]]
   include_goal: false
   mask_nonactions: false
   n_data: 100_000
