@@ -1,4 +1,4 @@
 data_args:
   dense_reward: true
   grid_size: 5
-test_adpp_interval: 100
+test_adpp_interval: 200

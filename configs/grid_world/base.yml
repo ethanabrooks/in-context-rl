@@ -53,7 +53,7 @@ optimizer_config:
   weight_decay: 0.1
 save_interval: 400
 seed: 0
-test_ad_interval: 5
+test_ad_interval: 25
 test_adpp_interval: null
 weights_args:
   actions: 5
