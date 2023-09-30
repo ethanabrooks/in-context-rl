@@ -45,7 +45,7 @@ model_args:
     resid_pdrop: 0.1
   n_embd: 32
   n_layer: 4
-  steps_per_context: 50
+  steps_per_context: 100
 n_batch: 50
 n_epochs: 2
 optimizer_config:
