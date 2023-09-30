@@ -15,7 +15,7 @@ data_args:
     seed: ${seed}
   heldout_tasks: []
   include_goal: false
-  mask_nonactions: true
+  mask_nonactions: false
   n_data: 100_000
   n_episodes: 1
   steps_per_context: ${model_args.steps_per_context}
