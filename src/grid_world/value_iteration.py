@@ -32,7 +32,7 @@ class ValueIteration(GridWorld):
         states = torch.tensor(
             [[i, j] for i in range(self.grid_size) for j in range(self.grid_size)]
         )
-        alpha = torch.ones(4)
+        alpha = torch.ones(len(self.deltas))
         Pi = (
             torch.distributions.Dirichlet(alpha)
             .sample((n_policies, N))

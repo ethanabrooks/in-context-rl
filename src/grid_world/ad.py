@@ -285,8 +285,6 @@ class Data(data.Data):
         actions: np.ndarray,
         rewards: np.ndarray,
     ):
-        deltas = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]])
-
         x, y = states.T
 
         # Using indices as the parameter
@@ -335,7 +333,7 @@ class Data(data.Data):
                 ax.arrow(
                     xi,
                     yi,
-                    *(0.1 * deltas[int(action)]),
+                    *(0.1 * self.grid_world.deltas[int(action)]),
                     head_width=0.1,
                     head_length=0.2,
                     fc=color,
