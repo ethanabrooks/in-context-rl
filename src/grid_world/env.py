@@ -39,7 +39,10 @@ class Env(GridWorld, Env):
             self.optimal = descending + [0.0] * (self.episode_length - distance)
         else:
             self.optimal = (
-                [0.0] * distance + [1.0] + [0.0] * (self.episode_length - distance - 1)
+                [0.0] * distance
+                + [1.0]
+                + [0.0 if self.absorbing_state else 1.0]
+                * (self.episode_length - distance - 1)
             )
         return s.numpy()
 

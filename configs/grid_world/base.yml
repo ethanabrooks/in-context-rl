@@ -10,6 +10,7 @@ data_args:
   alpha: 0.5
   dense_reward: false
   grid_world_args:
+    absorbing_state: true
     atol: 0.2
     gamma: 0.99
     seed: ${seed}

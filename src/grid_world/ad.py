@@ -49,7 +49,7 @@ class Data(data.Data):
         self.n_rounds = round((2 * grid_size - 1) / alpha)
         self.yield_every = yield_every
 
-        grid_world = ValueIteration(
+        self.grid_world = ValueIteration(
             alpha=alpha,
             dense_reward=dense_reward,
             episode_length=self.episode_length,
@@ -61,7 +61,7 @@ class Data(data.Data):
         )
         self._include_goal = include_goal
 
-        data = list(self.collect_data(grid_world, **value_iteration_args))
+        data = list(self.collect_data(self.grid_world, **value_iteration_args))
         data = [[*astuple(components), done] for components, done in data]
         components = zip(*data)
         components = [torch.cat(c, dim=1) for c in components]
@@ -169,6 +169,7 @@ class Data(data.Data):
 
     def build_env(self, seed: int, use_heldout_tasks: bool):
         return Env(
+            absorbing_state=self.grid_world.absorbing_state,
             dense_reward=self.dense_reward,
             episode_length=self.episode_length,
             grid_size=self.grid_size,

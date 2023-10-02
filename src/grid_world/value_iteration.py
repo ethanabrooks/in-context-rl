@@ -27,7 +27,7 @@ class ValueIteration(GridWorld):
         n_rounds: int,
     ):
         B = self.n_tasks
-        N = self.grid_size**2 + 1
+        N = self.n_states
         A = len(self.deltas)
         states = torch.tensor(
             [[i, j] for i in range(self.grid_size) for j in range(self.grid_size)]
@@ -53,7 +53,8 @@ class ValueIteration(GridWorld):
         # Modify transition to go to absorbing state if the next state is a goal
         absorbing_state_idx = N - 1
         S_ = S_[None].tile(B, 1, 1)
-        S_[is_goal[..., None].expand_as(S_)] = absorbing_state_idx
+        if self.absorbing_state:
+            S_[is_goal[..., None].expand_as(S_)] = absorbing_state_idx
 
         # Insert row for absorbing state
         padding = (0, 0, 0, 1)  # left 0, right 0, top 0, bottom 1
@@ -104,7 +105,9 @@ class ValueIteration(GridWorld):
         global_min = V[task_idx].min().item()
         global_max = V[task_idx].max().item()
 
-        values = V[task_idx, :-1].reshape((self.grid_size, self.grid_size))
+        if self.absorbing_state:
+            V = V[:, :-1]
+        values = V[task_idx].reshape((self.grid_size, self.grid_size))
         fig, ax = plt.subplots()
         im = ax.imshow(
             values,

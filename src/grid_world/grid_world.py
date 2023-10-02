@@ -8,6 +8,7 @@ from tqdm import tqdm
 class GridWorld:
     def __init__(
         self,
+        absorbing_state: bool,
         dense_reward: bool,
         episode_length: int,
         grid_size: int,
@@ -17,11 +18,12 @@ class GridWorld:
         use_heldout_goals: bool,
     ):
         super().__init__()
-        self.random = np.random.default_rng(seed)
+        self.absorbing_state = absorbing_state
         self.dense_reward = dense_reward
         self.episode_length = episode_length
         self.grid_size = grid_size
         self.heldout_goals = torch.tensor(heldout_goals)
+        self.random = np.random.default_rng(seed)
         self.use_heldout_goals = use_heldout_goals
         self.states = torch.tensor(
             [[i, j] for i in range(grid_size) for j in range(grid_size)]
@@ -43,18 +45,23 @@ class GridWorld:
         # Modify transition to go to absorbing state if the next state is a goal
         absorbing_state_idx = self.n_states - 1
         S_ = S_[None].tile(self.n_tasks, 1, 1)
-        S_[is_goal[..., None].expand_as(S_)] = absorbing_state_idx
+        if self.absorbing_state:
+            S_[is_goal[..., None].expand_as(S_)] = absorbing_state_idx
 
-        # Insert row for absorbing state
-        padding = (0, 0, 0, 1)  # left 0, right 0, top 0, bottom 1
-        S_ = F.pad(S_, padding, value=absorbing_state_idx)
-        self.T = F.one_hot(S_, num_classes=self.n_states).float()
+            # Insert row for absorbing state
+            padding = (0, 0, 0, 1)  # left 0, right 0, top 0, bottom 1
+            S_ = F.pad(S_, padding, value=absorbing_state_idx)
+        self.T: torch.Tensor = F.one_hot(S_, num_classes=self.n_states)
+        self.T = self.T.float()
+
         if dense_reward:
             distance = (self.goals[:, None] - self.states[None]).abs().sum(-1)
             R = -distance.float()[..., None].tile(1, 1, len(self.deltas))
         else:
             R = is_goal.float()[..., None].tile(1, 1, len(self.deltas))
-        self.R = F.pad(R, padding, value=0)  # Insert row for absorbing state
+        self.R = R
+        if self.absorbing_state:
+            self.R = F.pad(R, padding, value=0)  # Insert row for absorbing state
 
     def check_actions(self, actions: torch.Tensor):
         B = self.n_tasks
@@ -115,8 +122,10 @@ class GridWorld:
 
         # Flatten the 2D policy tensor to 1D
         policy = policy_2d.view(N * N, 4)
-        policy = F.pad(policy, (0, 0, 0, 1), value=0)  # Insert row for absorbing state
-        policy[-1, 0] = 1  # last state is terminal
+        if self.absorbing_state:
+            # Insert row for absorbing state
+            policy = F.pad(policy, (0, 0, 0, 1), value=0)
+            policy[-1, 0] = 1  # last state is terminal
         # self.visualize_policy(policy[None].tile(self.n_tasks, 1, 1))
         return policy
 
@@ -174,7 +183,10 @@ class GridWorld:
 
     @property
     def n_states(self):
-        return self.grid_size**2 + 1
+        n_states = self.grid_size**2
+        if self.absorbing_state:
+            n_states += 1
+        return n_states
 
     def reset_fn(self):
         array = self.random.choice(self.grid_size, size=(self.n_tasks, 2))
