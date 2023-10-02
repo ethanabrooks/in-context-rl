@@ -236,33 +236,52 @@ class GridWorld:
     def visualize_policy(self, Pi, task_idx: int = 0):
         N = self.grid_size
         policy = Pi[task_idx]
-        fig, ax = plt.subplots(figsize=(6, 6))
-        plt.xlim(-1, N)
-        plt.ylim(-1, N)
+        _, ax = plt.subplots(figsize=(6, 6))
+        plt.xlim(0, N)  # Adjusted the starting limit
+        plt.ylim(0, N)
 
         # Draw grid
         for i in range(N + 1):
-            plt.plot([i, i], [0, N], color="black", linewidth=0.5)
-            plt.plot([0, N], [i, i], color="black", linewidth=0.5)
+            offset = 0.5
+            plt.plot(
+                [i + offset, i + offset],
+                [0 + offset, N + offset],
+                color="black",
+                linewidth=0.5,
+            )
+            plt.plot(
+                [0 + offset, N + offset],
+                [i + offset, i + offset],
+                color="black",
+                linewidth=0.5,
+            )
 
         # Draw policy
         for i in range(N):
             for j in range(N):
                 center_x = j + 0.5
-                center_y = i + 0.5
+                center_y = N - i - 0.5
 
                 for action_idx, prob in enumerate(policy[N * i + j]):
                     if (
                         prob > 0
                     ):  # Only draw if there's a non-zero chance of taking the action
-                        if action_idx == 0:  # move up
-                            dx, dy = 0, -0.4
-                        elif action_idx == 1:  # move down
-                            dx, dy = 0, 0.4
-                        elif action_idx == 2:  # move left
-                            dx, dy = -0.4, 0
-                        elif action_idx == 3:  # move right
-                            dx, dy = 0.4, 0
+                        delta = self.deltas[action_idx]
+                        if tuple(delta) == (0, 0):
+                            radius = (
+                                0.2 * prob.item()
+                            )  # The circle's radius could be proportional to the action probability
+                            circle = plt.Circle(
+                                (center_x, center_y),
+                                radius,
+                                color="red",
+                                alpha=prob.item(),
+                            )
+                            ax.add_patch(circle)
+                            continue  # Skip the arrow drawing part for no-op action
+
+                        di, dj = delta * 0.4
+                        dx, dy = dj, -di
                         ax.arrow(
                             center_x - dx / 2,
                             center_y - dy / 2,
@@ -276,7 +295,10 @@ class GridWorld:
                         )
 
         plt.gca().set_aspect("equal", adjustable="box")
-        plt.xticks(np.arange(N))
-        plt.yticks(np.arange(N))
-        plt.gca().invert_yaxis()
-        plt.savefig(f"policy{task_idx}.png")
+        plt.xticks(np.arange(0.5, N + 0.5), np.arange(N))
+        plt.yticks(np.arange(0.5, N + 0.5), np.arange(N))
+        plt.savefig("policy.png")
+
+
+# whitelist
+GridWorld.visualize_policy
