@@ -28,7 +28,7 @@ class GridWorld:
         self.states = torch.tensor(
             [[i, j] for i in range(grid_size) for j in range(grid_size)]
         )
-        self.deltas = torch.tensor([[-1, 0], [1, 0], [0, -1], [0, 1]])
+        self.deltas = torch.tensor([[-1, 0], [1, 0], [0, -1], [0, 1], [0, 0]])
         self.n_tasks = n_tasks
         self.goals = self.sample_goals(n_tasks)
 
