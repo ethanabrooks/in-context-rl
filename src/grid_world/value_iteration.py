@@ -121,7 +121,7 @@ class ValueIteration(GridWorld):
         fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
         plt.tight_layout()
-        plt.savefig(f"values{task_idx}.png")
+        plt.savefig("values.png")
 
 
 # whitelist:
