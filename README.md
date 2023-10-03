@@ -1,76 +1,43 @@
-# set_transformer
-
-Official PyTorch implementation of the paper
-[Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks
-](http://proceedings.mlr.press/v97/lee19d.html).
-
-## Requirements
-
-- Python 3
-- torch >= 1.0
-- matplotlib
-- scipy
-- tqdm
+# In-Context RL with Model-Based Planning
+This is ongoing research that I am conducting as part of my PhD at University of Michigan.
 
 ## Abstract
 
-Many machine learning tasks such as multiple instance learning, 3D shape recognition, and few-shot image classification are defined on sets of instances.
-Since solutions to such problems do not depend on the order of elements of the set, models used to address them should be permutation invariant.
-We present an attention-based neural network module, the Set Transformer, specifically designed to model interactions among elements in the input set.
-The model consists of an encoder and a decoder, both of which rely on attention mechanisms.
-In an effort to reduce computational complexity, we introduce an attention scheme inspired by inducing point methods from sparse Gaussian process literature.
-It reduces the computation time of self-attention from quadratic to linear in the number of elements in the set.
- We show that our model is theoretically attractive and we evaluate it on a range of tasks, demonstrating the state-of-the-art performance compared to recent methods for set-structured data.
+In this paper, we propose an extension to [Algorithm Distillation
+(AD)](https://arxiv.org/abs/2210.14215) which augments the AD model with
+world-model predictions of states and rewards. We use these predictions to
+simulate rollouts during evaluation, which we use to estimate values. We then
+use these estimates to greedily choose actions. We demonstrate that this
+approach generally outperforms naive Algorithm Distillation and is far more
+capable of generalization to novel tasks. We also provide some analysis of the
+model's capability to scale with the quantity of data in the dataset.
+
+## Overleaf (in-progress)
+https://www.overleaf.com/read/hfdgqmrkzqtk
+
+## Installation
+### Poetry
+- Install [poetry](https://python-poetry.org/docs/#installation)
+- Run `poetry install` to install dependencies
+- Run `poetry shell` to activate the virtual environment
+
+### Nix
+- Install [nix](https://nixos.org/download.html)
+- Activate [flakes](https://nixos.wiki/wiki/Flakes)
+- Run `nix develop` to activate the virtual environment.
+- Alternatively, if you have [`direnv`](https://direnv.net/) installed, you can run `direnv allow` to activate the virtual environment.
+
 
 ## Experiments
-
-This repository implements the
-maximum value regression (section 5.1),
-amortized clustering (section 5.3),
-and point cloud classification (section 5.5)
-experiments in the [paper](http://proceedings.mlr.press/v97/lee19d.html).
-
-### Maximum Value Regression
-
-This experiment is reproduced in `max_regression_demo.ipynb`.
-
-### Amortized Clustering
-
-To run the amortized clustering experiment with Set Transformer, run
+5x5 Gridworld with AD and AD++:
 ```
-python run.py --net=set_transformer
-```
-To run the same experiment with Deep Sets, run
-```
-python run.py --net=deepset
+python src/main.py --config grid_world/adpp5x5
 ```
 
-### Point Cloud Classification
-We used the same preprocessed ModelNet40 dataset used in the [DeepSets paper](https://papers.nips.cc/paper/6931-deep-sets).
-We cannot publicly share this file due to copyright and license issues.
-To run this code, you must obtain the preprocessed dataset "ModelNet40_cloud.h5".
-We recommend using multiple GPUs for this experiment; we used 8 Tesla P40s.
-
-To run the point cloud classification experiment, run
+5x5 Gridworld (dense reward) with AD and AD++:
 ```
-python main_pointcloud.py --batch_size 256 --num_pts 100
-python main_pointcloud.py --batch_size 256 --num_pts 1000
-python main_pointcloud.py --batch_size 256 --num_pts 5000
+python src/main.py --config grid_world/adpp5x5dense
 ```
 
-The hyperparameters here were minimally tuned yet reproduced the results in the paper.
-It is likely that further tuning will get better results.
-
-## Reference
-
-If you found the provided code useful, please consider citing our work.
-
-```
-@InProceedings{lee2019set,
-    title={Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks},
-    author={Lee, Juho and Lee, Yoonho and Kim, Jungtaek and Kosiorek, Adam and Choi, Seungjin and Teh, Yee Whye},
-    booktitle={Proceedings of the 36th International Conference on Machine Learning},
-    pages={3744--3753},
-    year={2019}
-}
-```
+To activate logging via [`wandb`](https://wandb.ai/site/), use
+`python src/main.py log "Name of experiment" --config ...`
