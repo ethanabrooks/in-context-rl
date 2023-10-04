@@ -4,6 +4,8 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
+from data import Step
+
 
 class GridWorld:
     def __init__(
@@ -175,10 +177,12 @@ class GridWorld:
             current_states = next_states
 
         return (
-            self.goals[:, None].expand_as(states),
-            states,
-            actions[..., None],
-            rewards,
+            Step(
+                tasks=self.goals[:, None].expand_as(states),
+                observations=states,
+                actions=actions[..., None],
+                rewards=rewards,
+            ),
             done,
         )
 
