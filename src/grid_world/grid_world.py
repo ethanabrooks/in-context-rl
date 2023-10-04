@@ -258,7 +258,7 @@ class GridWorld:
         )
         done = time_step + 1 == self.episode_length
         if self.terminate_on_goal:
-            done = done | (next_states == self.goals).all(-1)
+            done = done | (states == self.goals).all(-1)
         return next_states, rewards, done, {}
 
     def visualize_policy(self, Pi, task_idx: int = 0):
