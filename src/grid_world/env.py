@@ -25,6 +25,18 @@ class Env(GridWorld, Env):
     def task_space(self):
         return MultiDiscrete([self.grid_size, self.grid_size])
 
+    @staticmethod
+    def build(grid_world: GridWorld, seed: int, use_heldout_tasks: bool):
+        return Env(
+            absorbing_state=grid_world.absorbing_state,
+            dense_reward=grid_world.dense_reward,
+            episode_length=grid_world.episode_length,
+            grid_size=grid_world.grid_size,
+            heldout_goals=grid_world.heldout_goals,
+            seed=seed,
+            use_heldout_goals=use_heldout_tasks,
+        )
+
     def get_task(self):
         [goal] = self.goals
         return goal

@@ -168,15 +168,7 @@ class Data(data.Data):
         return self.steps_per_context * self.step_dim
 
     def build_env(self, seed: int, use_heldout_tasks: bool):
-        return Env(
-            absorbing_state=self.grid_world.absorbing_state,
-            dense_reward=self.dense_reward,
-            episode_length=self.episode_length,
-            grid_size=self.grid_size,
-            heldout_goals=self.heldout_goals,
-            seed=seed,
-            use_heldout_goals=use_heldout_tasks,
-        )
+        return Env.build(self.grid_world, seed, use_heldout_tasks)
 
     def cat_sequence(self, step: Step):
         step = replace(step, rewards=step.rewards[..., None])
