@@ -17,6 +17,7 @@ class GridWorld:
         heldout_goals: list[tuple[int, int]],
         n_tasks: int,
         seed: int,
+        terminate_on_goal: bool,
         use_heldout_goals: bool,
     ):
         super().__init__()
@@ -24,9 +25,11 @@ class GridWorld:
         self.dense_reward = dense_reward
         self.episode_length = episode_length
         self.grid_size = grid_size
-        self.heldout_goals = torch.tensor(heldout_goals)
+        self.heldout_goals = heldout_goals
         self.random = np.random.default_rng(seed)
+        self.terminate_on_goal = terminate_on_goal
         self.use_heldout_goals = use_heldout_goals
+
         self.states = torch.tensor(
             [[i, j] for i in range(grid_size) for j in range(grid_size)]
         )
@@ -83,6 +86,10 @@ class GridWorld:
         assert [*states.shape] == [B, 2]
         assert states.max() < self.grid_size + 1
         assert 0 <= states.min()
+
+    def check_time_step(self, time_step: torch.Tensor):
+        B = self.n_tasks
+        assert [*time_step.shape] == [B]
 
     def create_exploration_policy(self):
         N = self.grid_size
@@ -148,6 +155,7 @@ class GridWorld:
         rewards = torch.zeros((B, trajectory_length))
         done = torch.zeros((B, trajectory_length), dtype=torch.bool)
         current_states = self.reset_fn()
+        time_step = torch.zeros((B))
 
         for t in tqdm(range(trajectory_length), desc="Sampling trajectories"):
             # Convert current current_states to indices
@@ -162,16 +170,17 @@ class GridWorld:
                 .long()
             )
 
-            next_states, R, D, _ = self.step_fn(current_states, A, t)
-
-            if D:
-                next_states = self.reset_fn()
+            next_states, R, D, _ = self.step_fn(current_states, A, time_step)
+            next_states_on_reset = self.reset_fn()
+            next_states[D] = next_states_on_reset[D]
 
             # Store the current current_states and rewards
             states[:, t] = current_states
             actions[:, t] = A
             rewards[:, t] = R
             done[:, t] = D
+            time_step += 1
+            time_step[D] = 0
 
             # Update current current_states
             current_states = next_states
@@ -207,7 +216,7 @@ class GridWorld:
             [len(all_states)], fill_value=not self.use_heldout_goals, dtype=torch.bool
         )
 
-        for row in self.heldout_goals:
+        for row in torch.tensor(self.heldout_goals):
             in_heldout_goals = torch.all(all_states == row, dim=1)
             if self.use_heldout_goals:
                 mask |= in_heldout_goals
@@ -223,10 +232,11 @@ class GridWorld:
         self,
         states: torch.Tensor,
         actions: torch.Tensor,
-        t: int,
+        time_step: torch.Tensor,
     ):
         self.check_states(states)
         self.check_actions(actions)
+        self.check_time_step(time_step)
         B = self.n_tasks
         # Convert current current_states to indices
         current_state_indices = states[:, 0] * self.grid_size + states[:, 1]
@@ -246,9 +256,9 @@ class GridWorld:
             ),
             dim=1,
         )
-        done = False
-        if (t + 1) % self.episode_length == 0:
-            done = True
+        done = time_step + 1 == self.episode_length
+        if self.terminate_on_goal:
+            done = done | (next_states == self.goals).all(-1)
         return next_states, rewards, done, {}
 
     def visualize_policy(self, Pi, task_idx: int = 0):

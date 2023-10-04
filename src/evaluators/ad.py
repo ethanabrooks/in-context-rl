@@ -211,11 +211,13 @@ class Rollout:
             assert len(step.info) == N
             observations[t] = step.observation
             rewards[t] = step.reward
-            terminations[t] = step.done
+            terminations[t] = step.done.flatten()
 
             episode_timesteps += 1
 
+            d: torch.Tensor
             for n, (d, i) in enumerate(zip(step.done, step.info)):
+                d = d.item()
                 assert isinstance(d, (bool, np.bool_))
                 assert isinstance(i, dict)
                 optimal = i.get("optimal", None)

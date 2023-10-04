@@ -14,6 +14,7 @@ data_args:
     atol: 0.2
     gamma: 0.99
     seed: ${seed}
+    terminate_on_goal: false
   heldout_tasks: [[0, 0]]
   include_goal: false
   mask_nonactions: false
