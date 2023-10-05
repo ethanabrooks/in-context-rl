@@ -168,14 +168,15 @@ def train_with_envs(
             log, tables = dataset.get_metrics(
                 logits=logits, mask=mask, sequence=sequence, **metrics_args
             )
-            counter.update(dict(**log, loss=loss.item()))
+            counter.update(dict(**log, loss=loss.item(), n_logs=1))
             if t % log_interval == 0:
-                log = {k: v / log_interval for k, v in counter.items()}
+                n_logs = counter["n_logs"]
+                log = {k: v / n_logs for k, v in counter.items()}
                 log.update(
                     epoch=e,
                     lr=decayed_lr,
                     save_count=save_count,
-                    time=(time.time() - tick) / log_interval,
+                    time=(time.time() - tick) / n_logs,
                 )
                 counter = Counter()
                 tick = time.time()
