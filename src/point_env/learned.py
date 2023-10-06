@@ -155,7 +155,8 @@ class Data(data.Data):
         episodes_per_rollout: int,
         include_task: bool,
         mask_nonactions: bool,
-        omit_episodes: Optional[tuple[int, int]],
+        keep_episodes: int,
+        skip_episodes: int,
         steps_per_context: int,
     ):
         self._episode_length = episode_length
@@ -164,20 +165,37 @@ class Data(data.Data):
         self.steps_per_context = steps_per_context
         components = self.get_data()
 
-        if omit_episodes is not None:
-            omit_start, omit_end = omit_episodes
-            episode_end, _ = components["done_mdp"].nonzero()
-            episode_start = ends_to_starts(episode_end)
-            history_end, _ = components["done"].nonzero()
-            history_start = ends_to_starts(history_end)
+        if (keep_episodes, skip_episodes) != (1, 0):
+            keep, skip = keep_episodes, skip_episodes
+            episode_ends, _ = components["done_mdp"].nonzero()
+            episode_starts = ends_to_starts(episode_ends)
+            history_ends, _ = components["done"].nonzero()
+            history_starts = ends_to_starts(history_ends)
             episode_starts_per_history = np.split(
-                episode_start, np.searchsorted(episode_end, history_start[1:])
+                episode_starts, np.searchsorted(episode_ends, history_starts[1:])
             )
 
             def generate_idxs():
-                for starts, end in zip(episode_starts_per_history, history_end):
-                    yield starts[0], starts[omit_start]  # initial episodes if any
-                    yield starts[omit_end:][0], end + 1  # final episodes if any
+                for starts, history_end in zip(
+                    episode_starts_per_history, history_ends
+                ):
+                    # Create an array of size total_episodes with elements [0, 1, 2, ... total_episodes-1]
+                    indices = np.arange(len(starts))
+
+                    # Find the indices that satisfy the keep and skip conditions
+                    mask = (indices % (keep + skip)) < keep
+                    mask = mask.astype(int)
+                    mask = np.pad(mask, (1, 1), constant_values=0)
+                    diffs = np.diff(mask)
+                    [start] = np.where(diffs == 1)
+                    [end] = np.where(diffs == -1)
+                    for start, end in zip(start, end):
+                        start = starts[start]
+                        try:
+                            end = starts[end]
+                        except IndexError:
+                            end = history_end + 1
+                        yield start, end
 
             mask = np.zeros(len(components), dtype=bool)
             for start, end in generate_idxs():
@@ -188,10 +206,10 @@ class Data(data.Data):
             components = components[mask]
 
         # Fix bug where first step is omitted
-        episode_end, _ = components["done_mdp"].nonzero()
-        episode_start = ends_to_starts(episode_end)
+        episode_ends, _ = components["done_mdp"].nonzero()
+        episode_starts = ends_to_starts(episode_ends)
         states = components["state"]
-        starts = episode_start[:-1]
+        starts = episode_starts[:-1]
         states[starts] = np.zeros_like(states[starts])
 
         def make_mask(component: np.ndarray):
