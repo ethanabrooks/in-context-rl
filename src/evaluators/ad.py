@@ -177,7 +177,7 @@ class Rollout:
         assert torch.all(history[:, index_history] == pad_value)
 
         # sample probs
-        [prediction] = self.net.predict(logits[:, index_logits]).T
+        [prediction] = self.net.sample(logits[:, index_logits]).T
         history[:, index_history] = prediction
         return prediction
 

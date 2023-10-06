@@ -284,7 +284,7 @@ class GPT(nn.Module):
 
         return logits, loss
 
-    def predict(self, logits: torch.Tensor) -> torch.Tensor:
+    def sample(self, logits: torch.Tensor) -> torch.Tensor:
         probs = logits.softmax(dim=-1)
         prediction = torch.multinomial(probs, num_samples=1)
         return self.encoder.decode(prediction)
