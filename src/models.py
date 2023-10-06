@@ -156,6 +156,7 @@ class GPT(nn.Module):
         self.tok_emb = nn.Embedding(n_tokens * step_dim + 1, n_embd)
 
         self.pos_emb = nn.Parameter(torch.zeros(1, context_size, n_embd))
+        self.gru = nn.GRU(n_embd, n_embd, batch_first=True)
         self.drop = nn.Dropout(embd_pdrop)
         # transformer
         self.blocks = nn.Sequential(
@@ -251,7 +252,8 @@ class GPT(nn.Module):
             :, :t, :
         ]  # each position maps to a (learnable) vector
         ## [ B x T x embedding_dim ]
-        x = self.drop(token_embeddings + position_embeddings)
+        x, _ = self.gru(token_embeddings + position_embeddings)
+        x = self.drop(x)
         x = self.blocks(x)
         ## [ B x T x embedding_dim ]
         x = self.ln_f(x)
