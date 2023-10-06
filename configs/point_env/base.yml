@@ -24,8 +24,8 @@ evaluate_args:
   n_plots: 3
 grad_norm_clip: 1.0
 load_path: null
-log_interval: 20
-log_tables_interval: 5
+log_interval: 500
+log_tables_interval: 1
 lr: 0.001
 metrics_args: {}
 model_args:
@@ -43,9 +43,9 @@ n_epochs: 200
 optimizer_config:
   betas: [0.9, 0.95]
   weight_decay: 0.1
-save_interval: 400
+save_interval: 2
 seed: 0
-test_ad_interval: 25
+test_ad_interval: 1
 test_adpp_interval: null
 weights_args:
   actions: 5

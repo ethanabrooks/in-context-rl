@@ -184,7 +184,7 @@ def train_with_envs(
                 log = {f"train/{k}": v for k, v in log.items()}
 
                 # test
-                log_t = t // log_interval
+                log_t = (e * len(loader) + t) // log_interval
                 if (
                     test_adpp_interval is not None
                     and (1 + log_t) % test_adpp_interval == 0
@@ -228,10 +228,10 @@ def train_with_envs(
                 plt.close()
                 log_table.print_row(row)
 
-            # save
-            if t % save_interval == 0:
-                save(run, net)
-                save_count += 1
+                # save
+                if log_t % save_interval == 0:
+                    save(run, net)
+                    save_count += 1
 
     save(run, net)
 
