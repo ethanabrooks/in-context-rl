@@ -9,7 +9,7 @@ adpp_envs_args:
 data_args:
   decimals: 1
   episode_length: 20
-  include_task: true
+  include_task: false
   keep_episodes: 1
   mask_nonactions: false
   skip_episodes: 0
