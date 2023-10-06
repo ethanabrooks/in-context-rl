@@ -51,8 +51,6 @@ class PointEnv(Env):
         self._task_space = spaces.Box(
             low=points.min(axis=0), high=points.max(axis=0), shape=(2,)
         )
-        self._optimal_rewards_iterator = None
-        self._optimal = None
 
     @property
     def action_space(self):
@@ -76,28 +74,11 @@ class PointEnv(Env):
     def get_task(self):
         return self._goal
 
-    def optimal_rewards_generator(
-        self,
-        start_state: np.ndarray,
-        goal: np.ndarray,
-    ):
-        current_state = start_state
-
-        while True:
-            optimal_action = goal - current_state
-            optimal_action = self.clip_action(optimal_action)
-            current_state = current_state + optimal_action
-            yield -np.linalg.norm(current_state - goal, ord=2)
-
     def reset(self):
         return self.reset_model()
 
     def reset_model(self):
         self._state = np.zeros(2)
-        self._optimal = []
-        self._optimal_rewards_iterator = self.optimal_rewards_generator(
-            self._state, self._goal
-        )
         return self._get_obs()
 
     def reset_task(self, task=None):
@@ -137,7 +118,5 @@ class PointEnv(Env):
         reward = self.reward(self._state, self._goal)
         done = False
         ob = self._get_obs()
-        optimal_reward = next(self._optimal_rewards_iterator)
-        self._optimal.append(optimal_reward)
-        info = {"task": self.get_task(), "optimal": self._optimal}
+        info = {"task": self.get_task(), "optimal": self.optimal}
         return ob, reward, done, info

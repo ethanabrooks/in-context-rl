@@ -57,7 +57,6 @@ class Data(point_env.learned.Data):
         env = self.build_env(
             seed=0,
             use_heldout_tasks=False,
-            include_optimal=False,
             max_episode_steps=self.max_steps,
         )
         dtype = [

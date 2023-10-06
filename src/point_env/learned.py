@@ -241,7 +241,11 @@ class Data(data.Data):
 
         # Split the rewards array at the end of each episode
         split_rewards = np.split(self.rewards, end_indices)
-        self.episode_rewards = [r for r in split_rewards if r.size > 0]
+        episode_rewards = [r for r in split_rewards if r.size > 0]
+        returns = [np.sum(r) for r in episode_rewards]
+        # Get the index of the episode with the best return
+        best_index = np.argmax(returns)
+        self.optimal = episode_rewards[best_index].flatten()
 
         masks = Step(
             tasks=make_mask(self.tasks),
@@ -344,21 +348,11 @@ class Data(data.Data):
         self,
         seed: int,
         use_heldout_tasks: bool,
-        include_optimal: bool = True,
         max_episode_steps: Optional[int] = None,
     ):
-        if include_optimal:
-            returns = [
-                np.sum(episode_rewards) for episode_rewards in self.episode_rewards
-            ]
-            # Get the index of the episode with the best return
-            best_index = np.argmax(returns)
-            optimal = self.episode_rewards[best_index].flatten()
-        else:
-            optimal = None
         env = PointEnv(
             goal_sampler="double-arc",
-            optimal=optimal,
+            optimal=self.optimal,
             seed=seed,
             test=use_heldout_tasks,
         )
