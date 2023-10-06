@@ -179,11 +179,13 @@ class Data(data.Data):
                     yield starts[0], starts[omit_start]  # initial episodes if any
                     yield starts[omit_end:][0], end + 1  # final episodes if any
 
-            components = np.concatenate(
-                [components[start:end] for start, end in generate_idxs()], axis=0
-            )
-
-            # Step 1: Compute a mask for each "done" value
+            mask = np.zeros(len(components), dtype=bool)
+            for start, end in generate_idxs():
+                if end is None:
+                    mask[start:] = True
+                else:
+                    mask[start:end] = True
+            components = components[mask]
 
         # Fix bug where first step is omitted
         episode_end, _ = components["done_mdp"].nonzero()
