@@ -152,7 +152,6 @@ class Data(data.Data):
         self,
         decimals: float,
         episode_length: int,
-        episodes_per_rollout: int,
         include_task: bool,
         mask_nonactions: bool,
         keep_episodes: int,
@@ -160,16 +159,22 @@ class Data(data.Data):
         steps_per_context: int,
     ):
         self._episode_length = episode_length
-        self._episodes_per_rollout = episodes_per_rollout
         self._include_task = include_task
         self.steps_per_context = steps_per_context
         components = self.get_data()
+        keep, skip = keep_episodes, skip_episodes
+        done_mdp = components["done_mdp"]
+        done = components["done"]
+        episodes_per_history = done_mdp.sum() / done.sum()
+        episodes_per_rollout = np.ceil(episodes_per_history / (keep + skip)) * keep
+        episodes_per_rollout = int(episodes_per_rollout)
+        episodes_per_rollout = min(episodes_per_rollout, 100)
+        self._episodes_per_rollout = episodes_per_rollout
 
         if (keep_episodes, skip_episodes) != (1, 0):
-            keep, skip = keep_episodes, skip_episodes
-            episode_ends, _ = components["done_mdp"].nonzero()
+            episode_ends, _ = done_mdp.nonzero()
             episode_starts = ends_to_starts(episode_ends)
-            history_ends, _ = components["done"].nonzero()
+            history_ends, _ = done.nonzero()
             history_starts = ends_to_starts(history_ends)
             episode_starts_per_history = np.split(
                 episode_starts, np.searchsorted(episode_ends, history_starts[1:])

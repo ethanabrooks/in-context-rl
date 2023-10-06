@@ -9,7 +9,6 @@ adpp_envs_args:
 data_args:
   decimals: 1
   episode_length: 20
-  episodes_per_rollout: 8
   include_task: true
   keep_episodes: 1
   mask_nonactions: false
