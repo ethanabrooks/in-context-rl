@@ -235,6 +235,14 @@ class Data(data.Data):
         self.steps_per_row: np.ndarray = self.ends.sum()
         self.steps_per_row: np.ndarray = self.steps_per_row.astype(int)
 
+        # Get indices where done_mdp is True
+        end_indices, _ = np.where(self.done_mdp)
+        end_indices += 1  # +1 to include the last step in the split
+
+        # Split the rewards array at the end of each episode
+        split_rewards = np.split(self.rewards, end_indices)
+        self.episode_rewards = [r for r in split_rewards if r.size > 0]
+
         masks = Step(
             tasks=make_mask(self.tasks),
             observations=make_mask(self.observations),
@@ -317,17 +325,6 @@ class Data(data.Data):
     @lru_cache
     def max_regret(self):
         return self.episode_length
-
-    @property
-    @lru_cache
-    def episode_rewards(self):
-        # Get indices where done_mdp is True
-        end_indices, _ = np.where(self.done_mdp)
-        end_indices += 1  # +1 to include the last step in the split
-
-        # Split the rewards array at the end of each episode
-        split_rewards = np.split(self.rewards, end_indices)
-        return [r for r in split_rewards if r.size > 0]
 
     @property
     @lru_cache
