@@ -7,7 +7,7 @@ adpp_envs_args:
   n_processes: 10
   use_heldout_tasks: false
 data_args:
-  decimals: 2
+  decimals: 1
   episode_length: 20
   episodes_per_rollout: 5
   include_task: true
