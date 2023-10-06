@@ -22,7 +22,9 @@ def clamp(action: torch.Tensor, space: Space):
     if isinstance(space, Discrete):
         return torch.clamp(action, min=0, max=space.n - 1)
     elif isinstance(space, MultiDiscrete):
-        return torch.clamp(action, min=0, max=space.nvec - 1)
+        max = torch.tensor(space.nvec).cuda()
+        min = torch.zeros_like(max)
+        return torch.clamp(action, min=min, max=max)
     elif isinstance(space, Box):
         low = torch.tensor(space.low).cuda()
         high = torch.tensor(space.high).cuda()
