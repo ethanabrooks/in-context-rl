@@ -14,7 +14,7 @@ data_args:
   mask_nonactions: false
   skip_episodes: 0
   steps_per_context: 100
-data_path: point_env/learned
+data_path: point_env/data
 decay_args:
   final: 100_000
   warmup: 1000
