@@ -21,7 +21,7 @@ from data import Step
 from encoder import ContiguousEncoder
 from plot import plot_eval_metrics
 from point_env.env import PointEnv
-from pretty import render_eval_metrics
+from pretty import Timer, render_eval_metrics
 from replay_buffer import valid_checksum
 
 
@@ -235,7 +235,8 @@ class Data(data.Data):
         encoder_input = self.unpadded_data.flatten()
         encoder_input = np.append(encoder_input, self.pad_value)
         encoder_input = torch.from_numpy(encoder_input)
-        self._encoder = ContiguousEncoder(encoder_input, decimals)
+        with Timer("Encoding"):
+            self._encoder = ContiguousEncoder(encoder_input, decimals)
         padding = ((self.steps_per_context, 0), (0, 0))
         mask = np.pad(self.unpadded_mask, padding, constant_values=False)
         data = np.pad(self.unpadded_data, padding, constant_values=self.pad_value)
