@@ -23,8 +23,9 @@ def plot_eval_metrics(df: pd.DataFrame, name: str, ymin: float, ymax: float):
     sems = df.groupby("episode").metric.sem()
 
     fig, ax = plt.subplots()
-    ax.fill_between(means.index, means - sems, means + sems, alpha=0.2)
-    ax.plot(means.index, means)
+    x = means.index + 1  # 1-indexed
+    ax.fill_between(x, means - sems, means + sems, alpha=0.2)
+    ax.plot(x, means)
     ax.set_ylim(ymin, ymax)
     ax.set_xlabel("episode")
     ax.set_ylabel(name)
