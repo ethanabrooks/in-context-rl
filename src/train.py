@@ -132,8 +132,8 @@ def train_with_envs(
     optimizer = configure(lr=lr, module=net, **optimizer_config)
 
     counter = Counter()
-    n_tokens = 0
     save_count = 0
+    log_count = 0
     ad_log = {}
     adpp_log = {}
     tick = time.time()
@@ -159,7 +159,6 @@ def train_with_envs(
                 optimizer.step()
 
             # update learning rate
-            n_tokens += mask.sum()
             decayed_lr = decay_lr(lr, step=step, **decay_args)
             for param_group in optimizer.param_groups:
                 param_group.update(lr=decayed_lr)
@@ -184,10 +183,9 @@ def train_with_envs(
                 log = {f"train/{k}": v for k, v in log.items()}
 
                 # test
-                log_t = (e * len(loader) + t) // log_interval
                 if (
                     test_adpp_interval is not None
-                    and (1 + log_t) % test_adpp_interval == 0
+                    and (1 + log_count) % test_adpp_interval == 0
                 ):
                     adpp_log, fig = evaluate(
                         dataset=dataset,
@@ -199,7 +197,7 @@ def train_with_envs(
                     )
                     log.update(fig)
                     log_table.print_header(row)
-                if log_t % test_ad_interval == 0:
+                if log_count % test_ad_interval == 0:
                     ad_log, fig = evaluate(
                         dataset=dataset,
                         envs=ad_envs,
@@ -214,7 +212,7 @@ def train_with_envs(
                 log.update(adpp_log)
                 log.update(ad_log)
 
-                if log_t % log_tables_interval == 0:
+                if log_count % log_tables_interval == 0:
 
                     def get_figures():
                         for name, xs in tables.items():
@@ -225,11 +223,12 @@ def train_with_envs(
 
                 if run is not None:
                     wandb.log(log, step=step)
+                log_count += 1
                 plt.close()
                 log_table.print_row(row)
 
                 # save
-                if log_t % save_interval == 0:
+                if log_count % save_interval == 0:
                     save(run, net)
                     save_count += 1
 
