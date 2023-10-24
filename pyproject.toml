@@ -24,6 +24,7 @@ omegaconf = "^2.3.0"
 pandas = "^2.1.0"
 braceexpand = "^0.1.7"
 huggingface = "^0.0.1"
+transformers = "^4.34.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.6.0"
