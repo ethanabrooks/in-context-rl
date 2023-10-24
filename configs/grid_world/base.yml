@@ -40,19 +40,13 @@ lr: 0.001
 metrics_args: {}
 model_args:
   embd_pdrop: 0.1
-  layer_args:
-    causal_self_attention_args:
-      attn_pdrop: 0.1
-      n_head: 4
-    resid_pdrop: 0.1
+  gpt2_args:
+    n_head: 4
+    n_layer: 4
   n_embd: 32
-  n_layer: 4
   steps_per_context: 100
 n_batch: 50
 n_epochs: 2
-optimizer_config:
-  betas: [0.9, 0.95]
-  weight_decay: 0.1
 save_interval: 400
 seed: 0
 test_ad_interval: 25
