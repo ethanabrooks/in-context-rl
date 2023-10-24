@@ -81,6 +81,12 @@
             url = "https://download.pytorch.org/whl/cu116/torch-1.13.1%2Bcu116-cp39-cp39-linux_x86_64.whl";
             sha256 = "sha256-20V6gi1zYBO2/+UJBTABvJGL3Xj+aJZ7YF9TmEqa+sU=";
           };
+
+          postFixup = ''
+            for lib in $out/lib/python3.9/site-packages/torch/lib/*.so*; do
+              patchelf --set-rpath "${pkgs.gcc.cc.lib}/lib:$(patchelf --print-rpath "$lib")" "$lib"
+            done
+          '';
         };
         torchrl = pyprev.torchrl.overridePythonAttrs (old: {
           preFixup = "addAutoPatchelfSearchPath ${pyfinal.torch}";
@@ -101,7 +107,7 @@
       devShell = pkgs.mkShell {
         MUJOCO_PY_MUJOCO_PATH = "${mujoco}";
         MUJOCO_PY_FORCE_CPU = 1;
-        LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${mesa.osmesa}/lib:${gcc-unwrapped.lib}/lib:${mujoco}/bin";
+        LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${mesa.osmesa}/lib:${mujoco}/bin";
         buildInputs = with pkgs; [
           alejandra
           poetry
