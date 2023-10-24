@@ -1,0 +1,6 @@
+data_args:
+  dense_reward: true
+  grid_size: 5
+  grid_world_args:
+    absorbing_state: false
+test_adpp_interval: 200
