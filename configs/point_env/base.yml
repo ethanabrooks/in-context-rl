@@ -29,7 +29,6 @@ log_tables_interval: 1
 lr: 0.001
 metrics_args: {}
 model_args:
-  embd_pdrop: 0.1
   gpt2_args:
     n_head: 4
     n_layer: 4

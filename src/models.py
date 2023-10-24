@@ -45,7 +45,6 @@ class GPT(nn.Module):
     def __init__(
         self,
         encoder: Encoder,
-        embd_pdrop: float,
         gpt2_args: dict,
         n_embd: int,
         n_tokens: int,
@@ -59,7 +58,6 @@ class GPT(nn.Module):
         # input embedding stem (+1 for stop token)
         self.tok_emb = nn.Embedding(n_tokens * step_dim + 1, n_embd)
 
-        self.drop = nn.Dropout(embd_pdrop)
         # transformer
         # Use Huggingface's GPT2:
         config = GPT2Config(
@@ -71,7 +69,6 @@ class GPT(nn.Module):
         )
         self.gpt2_model = GPT2Model(config)
         # decoder head
-        self.ln_f = nn.LayerNorm(n_embd)
         self.head = EinLinear(step_dim, n_embd, n_tokens + 1, bias=False)
 
         self.vocab_size = n_tokens
@@ -147,10 +144,8 @@ class GPT(nn.Module):
             offset_idx
         )  # each index maps to a (learnable) vector
         # [ B x T x embedding_dim ]
-        x = self.drop(token_embeddings)
-        x = self.gpt2_model(inputs_embeds=x).last_hidden_state
+        x = self.gpt2_model(inputs_embeds=token_embeddings).last_hidden_state
         # [ B x T x embedding_dim ]
-        x = self.ln_f(x)
 
         # [ (B * T' / transition_dim) x transition_dim x embedding_dim ]
         x_pad, n_pad = self.pad_to_full_observation(x)
