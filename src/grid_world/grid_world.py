@@ -83,6 +83,7 @@ class GridWorld:
         assert 0 <= states.min()
 
     def create_exploration_policy(self):
+        A = len(self.deltas)
         N = self.grid_size
 
         def odd(n):
@@ -91,7 +92,7 @@ class GridWorld:
         assert not odd(N), "Perfect exploration only possible with even grid."
 
         # Initialize the policy tensor with zeros
-        policy_2d = torch.zeros(N, N, 4)
+        policy_2d = torch.zeros(N, N, A)
 
         # Define the deterministic policy
         for i in range(N):
@@ -121,7 +122,7 @@ class GridWorld:
                     policy_2d[i, j, move] = 1  # move left/right
 
         # Flatten the 2D policy tensor to 1D
-        policy = policy_2d.view(N * N, 4)
+        policy = policy_2d.view(N * N, A)
         if self.absorbing_state:
             # Insert row for absorbing state
             policy = F.pad(policy, (0, 0, 0, 1), value=0)
