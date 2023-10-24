@@ -18,7 +18,7 @@ import wandb
 from data import Data
 from envs.parallel.subproc_vec_env import SubprocVecEnv
 from models import GPT
-from optimizer import configure, decay_lr
+from optimizer import decay_lr
 from plot import plot_accuracy
 from pretty import Table
 from seeding import set_seed
@@ -109,7 +109,6 @@ def train_with_envs(
     model_args: dict,
     n_batch: int,
     n_epochs: int,
-    optimizer_config: dict,
     run: Optional[Run],
     save_interval: int,
     test_ad_interval: int,
@@ -129,7 +128,7 @@ def train_with_envs(
 
     print("✓")
 
-    optimizer = configure(lr=lr, module=net, **optimizer_config)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
 
     counter = Counter()
     n_tokens = 0
