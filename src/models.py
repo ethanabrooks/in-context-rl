@@ -1,4 +1,5 @@
 import math
+from functools import lru_cache
 
 import numpy as np
 import torch
@@ -41,6 +42,46 @@ class EinLinear(nn.Module):
         return output
 
 
+class PositionalEncoding(nn.Module):
+    def __init__(
+        self,
+        log_term: float,
+        n_hidden: int,
+        scale_term: float,
+    ):
+        super().__init__()
+        self.n_hidden = n_hidden
+        div_term = scale_term * torch.exp(
+            torch.arange(0, self.n_hidden, 2)
+            * -(torch.log(torch.tensor(log_term)) / self.n_hidden)
+        )
+        self.register_buffer("div_term", div_term)
+
+    @lru_cache()
+    def encoding(self, shape: torch.Size, device: torch.device):
+        return torch.zeros(*shape[:-1], self.n_hidden).to(device)
+
+    def forward(self, x: torch.Tensor):
+        """
+        Encode continuous values using sinusoidal functions.
+
+        Args:
+        - continuous (torch.Tensor): A tensor of shape (batch_size, sequence_length) containing the continuous values.
+        - d_model (int): Dimension of the encoding. Typically the model's hidden dimension.
+
+        Returns:
+        - torch.Tensor: The sinusoidal encoding of shape (batch_size, sequence_length, d_model).
+        """
+        # Expand dimensions for broadcasting
+        x = x.unsqueeze(-1)
+        pos = x * self.div_term
+        encoding = self.encoding(x.shape, x.device)
+        encoding[..., 0::2] = torch.sin(pos)
+        encoding[..., 1::2] = torch.cos(pos)
+
+        return encoding
+
+
 class GPT(nn.Module):
     def __init__(
         self,
@@ -58,7 +99,9 @@ class GPT(nn.Module):
         context_size = steps_per_context * step_dim - 1
 
         # input embedding stem (+1 for stop token)
-        self.tok_emb = nn.Embedding(n_tokens * step_dim + 1, n_embd)
+        self.tok_emb = PositionalEncoding(
+            log_term=10000.0, n_hidden=n_embd, scale_term=1
+        )
 
         # transformer
         # Use Huggingface's GPT2:
