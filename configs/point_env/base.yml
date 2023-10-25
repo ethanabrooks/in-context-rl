@@ -12,7 +12,7 @@ data_args:
   include_task: false
   keep_episodes: 1
   mask_nonactions: false
-  skip_episodes: 0
+  skip_episodes: 100
   steps_per_context: 100
 data_path: point_env/data
 decay_args:
