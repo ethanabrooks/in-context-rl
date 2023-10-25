@@ -42,7 +42,7 @@ model_args:
   gpt2_args:
     n_head: 4
     n_layer: 4
-  gru_position: neither
+  gru: true
   n_embd: 32
   steps_per_context: 100
 n_batch: 50

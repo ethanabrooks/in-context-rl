@@ -1,4 +1,3 @@
-from enum import Enum, auto
 import math
 
 import numpy as np
@@ -42,18 +41,12 @@ class EinLinear(nn.Module):
         return output
 
 
-class GRUPosition(Enum):
-    BEFORE = auto()
-    AFTER = auto()
-    NEITHER = auto()
-
-
 class GPT(nn.Module):
     def __init__(
         self,
         encoder: Encoder,
         gpt2_args: dict,
-        gru_position: str,
+        gru: bool,
         n_embd: int,
         n_tokens: int,
         step_dim: int,
@@ -61,7 +54,7 @@ class GPT(nn.Module):
     ):
         super().__init__()
         self.encoder = encoder
-        self.gru_position = GRUPosition[gru_position.upper()]
+        self.gru = gru
         context_size = steps_per_context * step_dim - 1
 
         # input embedding stem (+1 for stop token)
@@ -76,11 +69,7 @@ class GPT(nn.Module):
             n_embd=n_embd,
             **gpt2_args
         )
-        self.gru = (
-            None
-            if self.gru_position == GRUPosition.NEITHER
-            else nn.GRU(n_embd, n_embd, batch_first=True)
-        )
+        self.gru = None if gru else nn.GRU(n_embd, n_embd, batch_first=True)
         self.gpt2_model = GPT2Model(config)
         # decoder head
         self.head = EinLinear(step_dim, n_embd, n_tokens + 1, bias=False)
@@ -155,14 +144,12 @@ class GPT(nn.Module):
         # [ B x T x embedding_dim ]
         # forward the GPT model
         x = self.tok_emb(offset_idx)  # each index maps to a (learnable) vector
-        if self.gru_position == GRUPosition.BEFORE:
+        if self.gru:
             x, _ = self.gru(x)
 
         # [ B x T x embedding_dim ]
         x = self.gpt2_model(inputs_embeds=x).last_hidden_state
         # [ B x T x embedding_dim ]
-        if self.gru_position == GRUPosition.AFTER:
-            x, _ = self.gru(x)
 
         # [ (B * T' / transition_dim) x transition_dim x embedding_dim ]
         x_pad, n_pad = self.pad_to_full_observation(x)
